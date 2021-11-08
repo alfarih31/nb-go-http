@@ -10,6 +10,7 @@ const CORSAllowMethods = "Access-Control-Allow-Methods"
 const CORSAllowCredentials = "Access-Control-Allow-Credentials"
 
 type CORSCfg struct {
+	Enable           bool
 	AllowOrigins     string
 	AllowMethods     string
 	AllowHeaders     string
@@ -17,7 +18,7 @@ type CORSCfg struct {
 }
 
 type TCORS struct {
-	Config CORSCfg
+	Config *CORSCfg
 }
 
 type ICORS interface {
@@ -31,9 +32,9 @@ func (cr TCORS) PutCORS(w http.ResponseWriter) {
 	w.Header().Set(CORSAllowCredentials, BoolParser{cr.Config.AllowCredentials}.ToString())
 }
 
-func CORS(cfg CORSCfg) HTTPHandler {
+func CORS(config *CORSCfg) HTTPHandler {
 	cors := TCORS{
-		Config: cfg,
+		Config: config,
 	}
 
 	return func(c *HandlerCtx) *Response {

@@ -20,38 +20,38 @@ type ResponseBody struct {
 }
 
 type Response struct {
-    Code int
+	Code   int
 	Header ResponseHeader
 	Body   ResponseBody
 }
 
-func (s ResponseStatus) AssignTo(ts *ResponseStatus) {
-	if ts.MessageClient == "" {
-		ts.MessageClient = s.MessageClient
+func (s ResponseStatus) AssignTo(target *ResponseStatus) {
+	if target.MessageClient == "" {
+		target.MessageClient = s.MessageClient
 	}
 
-	if ts.MessageServer == "" {
-		ts.MessageServer = s.MessageServer
+	if target.MessageServer == "" {
+		target.MessageServer = s.MessageServer
 	}
 
-	if ts.Code == 0 {
-		ts.Code = s.Code
+	if target.Code == 0 {
+		target.Code = s.Code
 	}
 }
 
 func (r Response) Compose(res Response) Response {
-    r.Header.AssignTo(res.Header)
-    res.Body = r.Body.Compose(res.Body)
-    
-    if res.Code == 0 {
-        res.Code = r.Code
-    }
+	r.Header.AssignTo(res.Header)
+	res.Body = r.Body.Compose(res.Body)
 
-    return Response{
-        Code: res.Code,
-        Header: res.Header,
-        Body: res.Body,
-    }
+	if res.Code == 0 {
+		res.Code = r.Code
+	}
+
+	return Response{
+		Code:   res.Code,
+		Header: res.Header,
+		Body:   res.Body,
+	}
 }
 
 func (b ResponseBody) Compose(body ResponseBody) ResponseBody {

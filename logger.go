@@ -56,9 +56,9 @@ func (l TLogger) NewChild(cname string) ILogger {
 	return l
 }
 
-func Logger(sname string, debug bool) ILogger {
+func Logger(serviceName string, debug bool) ILogger {
 	l := TLogger{
-		ServiceName: sname,
+		ServiceName: serviceName,
 	}
 
 	l.IsDebug = debug

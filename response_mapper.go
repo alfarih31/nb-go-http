@@ -20,74 +20,74 @@ type IResponseMapper interface {
 func initStandardResponses() map[string]Response {
 	return map[string]Response{
 		StatusSuccess: {
-            Code: http.StatusOK,
-            Body: ResponseBody{
-                Status: ResponseStatus{
-                    Code:          0,
-                    MessageClient: "Success",
-                    MessageServer: "Success",
-                },
-            },
+			Code: http.StatusOK,
+			Body: ResponseBody{
+				Status: ResponseStatus{
+					Code:          0,
+					MessageClient: "Success",
+					MessageServer: "Success",
+				},
+			},
 		},
 		StatusErrorBadRequest: {
-            Code: http.StatusBadRequest,
-            Body: ResponseBody{
-                Status: ResponseStatus{
-                    Code:          1,
-                    MessageClient: "Bad Request",
-                    MessageServer: "Bad Request",
-                },  
-            },
+			Code: http.StatusBadRequest,
+			Body: ResponseBody{
+				Status: ResponseStatus{
+					Code:          1,
+					MessageClient: "Bad Request",
+					MessageServer: "Bad Request",
+				},
+			},
 		},
 		StatusErrorUnauthorized: {
-            Code: http.StatusUnauthorized,
-            Body: ResponseBody{
-                Status: ResponseStatus{
-                    Code:          1,
-                    MessageClient: "Unauthorized",
-                    MessageServer: "Unauthorized",
-                },
-            },
-        },
-		StatusErrorForbidden: {
-            Code: http.StatusForbidden,
+			Code: http.StatusUnauthorized,
 			Body: ResponseBody{
-                Status: ResponseStatus{
-                    Code:          1,
-                    MessageClient: "Forbidden",
-                    MessageServer: "Forbidden",
-                },
-            },
+				Status: ResponseStatus{
+					Code:          1,
+					MessageClient: "Unauthorized",
+					MessageServer: "Unauthorized",
+				},
+			},
+		},
+		StatusErrorForbidden: {
+			Code: http.StatusForbidden,
+			Body: ResponseBody{
+				Status: ResponseStatus{
+					Code:          1,
+					MessageClient: "Forbidden",
+					MessageServer: "Forbidden",
+				},
+			},
 		},
 		StatusErrorNotFound: {
-            Code: http.StatusNotFound,
-            Body: ResponseBody{
-                Status: ResponseStatus{
-                    Code:         1,
-                    MessageClient: "Not Found",
-                    MessageServer: "Not Found",
-                },
-            },
-        },
-		StatusErrorInternal: {
-            Code: http.StatusInternalServerError,
+			Code: http.StatusNotFound,
 			Body: ResponseBody{
-                Status: ResponseStatus{
-                    Code:          1,
-                    MessageClient: "Internal Error",
-                    MessageServer: "Internal Error",
-                },
-            },
+				Status: ResponseStatus{
+					Code:          1,
+					MessageClient: "Not Found",
+					MessageServer: "Not Found",
+				},
+			},
+		},
+		StatusErrorInternal: {
+			Code: http.StatusInternalServerError,
+			Body: ResponseBody{
+				Status: ResponseStatus{
+					Code:          1,
+					MessageClient: "Internal Error",
+					MessageServer: "Internal Error",
+				},
+			},
 		},
 		StatusErrorBadGateway: {
-            Code: http.StatusBadGateway,
+			Code: http.StatusBadGateway,
 			Body: ResponseBody{
-                Status: ResponseStatus{
-                    Code:          1,
-                    MessageClient: "Bad Gateway",
-                    MessageServer: "Bad Gateway",
-                },
-            },
+				Status: ResponseStatus{
+					Code:          1,
+					MessageClient: "Bad Gateway",
+					MessageServer: "Bad Gateway",
+				},
+			},
 		},
 	}
 }
@@ -120,12 +120,12 @@ func (m *TResponseMapper) Get(code string, options *struct{ Success bool }) Resp
 	return r
 }
 
-func ResponseMapper(l ILogger) IResponseMapper {
-	l.Debug("OK", nil)
+func ResponseMapper(logger ILogger) IResponseMapper {
+	logger.Debug("OK", nil)
 
 	m := TResponseMapper{
 		Responses: initStandardResponses(),
-		Logger:    l,
+		Logger:    logger,
 	}
 
 	return &m

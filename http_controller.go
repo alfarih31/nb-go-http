@@ -2,8 +2,8 @@ package nbgohttp
 
 import (
 	"fmt"
-    "math"
-    "net/http"
+	"math"
+	"net/http"
 	"strings"
 )
 
@@ -68,7 +68,6 @@ func (h HTTPControllerCtx) ToExtHandler(handler HTTPHandler) ExtHandler {
 				}
 			},
 			Catch: func(e interface{}) {
-				h.Logger.Debug(e, nil)
 				h.SendError(c, e)
 			},
 		})
@@ -86,9 +85,9 @@ func (h HTTPControllerCtx) ToExtHandlers(handlers []HTTPHandler) []ExtHandler {
 }
 
 func (h *HTTPControllerCtx) ChainControllers(ctrls ...HTTPControllerCtx) {
-    for _, ctrl := range ctrls {
-        h.Router.AppendHandlers(ctrl.Router.Handlers())
-    }
+	for _, ctrl := range ctrls {
+		h.Router.AppendHandlers(ctrl.Router.Handlers())
+	}
 }
 
 func (h *HTTPControllerCtx) Handle(spec string, handlers ...HTTPHandler) {
@@ -111,8 +110,8 @@ func (h *HTTPControllerCtx) Handle(spec string, handlers ...HTTPHandler) {
 		h.Router.OPTIONS(handlerSpec.path, h.ToExtHandlers(handlers)...)
 	case "HEAD":
 		h.Router.HEAD(handlerSpec.path, h.ToExtHandlers(handlers)...)
-    case "PATCH":
-        h.Router.PATCH(handlerSpec.path, h.ToExtHandlers(handlers)...)
+	case "PATCH":
+		h.Router.PATCH(handlerSpec.path, h.ToExtHandlers(handlers)...)
 	case "USE":
 		h.Router.USE(h.ToExtHandlers(handlers)...)
 	default:
@@ -123,8 +122,8 @@ func (h *HTTPControllerCtx) Handle(spec string, handlers ...HTTPHandler) {
 func (h *HTTPControllerCtx) SendSuccess(c *HandlerCtx, res *Response) {
 	r := h.ResponseMapper.GetSuccess()
 
-    r = r.Compose(*res)
-    
+	r = r.Compose(*res)
+
 	_, e := c.Response(http.StatusOK, r.Body.String(), r.Header)
 
 	if e != nil {
@@ -141,23 +140,23 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}) {
 	case Err:
 		r = h.ResponseMapper.Get(er.Code, nil)
 
-        errorData["errors"] = er.Data
+		errorData["errors"] = er.Data
 
 		if er.Code != "" && er.Code != StatusErrorInternal && r.Code == http.StatusInternalServerError {
 			h.Logger.Warn(fmt.Sprintf("Error code not mapped. Code = %s", er.Code), nil)
 		}
 	case error:
 		r.Body = r.Body.Compose(ResponseBody{
-        Status: ResponseStatus{
-            MessageServer: er.Error(),
-        },
-        })
+			Status: ResponseStatus{
+				MessageServer: er.Error(),
+			},
+		})
 	case string:
-        r.Body = r.Body.Compose(ResponseBody{
-            Status: ResponseStatus{
-                MessageServer: er,
-            },
-        })
+		r.Body = r.Body.Compose(ResponseBody{
+			Status: ResponseStatus{
+				MessageServer: er,
+			},
+		})
 	}
 
 	_, rEr := c.Response(r.Code, r.Body.String(), r.Header)
@@ -175,14 +174,14 @@ func (h *HTTPControllerCtx) SetRouter(r ExtRouter) {
 	h.Router = &r
 }
 
-func HTTPController(r *ExtRouter, l ILogger, rm IResponseMapper) HTTPControllerCtx {
-	l.Debug("OK", nil)
+func HTTPController(router *ExtRouter, logger ILogger, responseMapper IResponseMapper) HTTPControllerCtx {
+	logger.Debug("OK", nil)
 
 	h := HTTPControllerCtx{
-		Router:         r,
-		Logger:         l,
-		ResponseMapper: rm,
+		Router:         router,
+		Logger:         logger,
+		ResponseMapper: responseMapper,
 	}
-    
+
 	return h
 }

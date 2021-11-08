@@ -6,14 +6,14 @@ import (
 
 type KeyValue map[string]interface{}
 
-func (k KeyValue) AssignTo(tk KeyValue) {
+func (k KeyValue) AssignTo(target KeyValue) {
 	for key, val := range k {
-		tk[key] = val
+		target[key] = val
 	}
 }
 
-func (k KeyValue) Assign(tk KeyValue) {
-	for key, val := range tk {
+func (k KeyValue) Assign(source KeyValue) {
+	for key, val := range source {
 		k[key] = val
 	}
 }
@@ -35,17 +35,8 @@ func (k KeyValue) Values() []interface{} {
 	return values
 }
 
-//func (k KeyValue) MarshalJSON() ([]byte, error) {
-//    o := map[string]interface{}{}
-//    for key, val := range k {
-//        o[key] = val
-//    }
-//
-//    return json.Marshal(o)
-//}
-
-func StructToMapString(k interface{}) map[string]interface{} {
-	j, e := json.Marshal(k)
+func StructToMapString(strct interface{}) map[string]interface{} {
+	j, e := json.Marshal(strct)
 
 	if e != nil {
 		ThrowError(Err{
@@ -66,9 +57,9 @@ func StructToMapString(k interface{}) map[string]interface{} {
 	return t
 }
 
-func KeyValueFromStruct(o interface{}) KeyValue {
+func KeyValueFromStruct(strct interface{}) KeyValue {
 	kv := KeyValue{}
-	for key, val := range StructToMapString(o) {
+	for key, val := range StructToMapString(strct) {
 		kv[key] = val
 	}
 

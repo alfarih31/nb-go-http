@@ -10,7 +10,7 @@ type CoreCtx struct {
 	startTime time.Time
 	provider  IHTTPProvider
 	Router    *ExtRouter
-	Config    CoreCfg
+	Config    *CoreCfg
 	Logger    ILogger
 
 	HTTP           HTTPControllerCtx
@@ -27,13 +27,13 @@ type Server struct {
 	Host string
 	Port int
 	Path string
-	CORS CORSCfg
+	CORS *CORSCfg
 }
 
 type CoreCfg struct {
-	Debug bool
-	Server
-	Meta
+	Debug  bool
+	Server *Server
+	Meta   *Meta
 }
 
 func (co CoreCtx) Boot() {
@@ -51,14 +51,20 @@ func (co CoreCtx) Start() {
 		StartTime: time.Now(),
 	}
 
-	co.HTTP.Handle("USE", CORS(co.Config.CORS), common.RequestLogger())
-	co.HTTP.Handle("GET /", common.APIStatus(co.Config.Meta))
+	if co.Config.Server.CORS != nil {
+		if co.Config.Server.CORS.Enable {
+			co.HTTP.Handle("USE", CORS(co.Config.Server.CORS))
+		}
+	}
+
+	co.HTTP.Handle("USE", common.RequestLogger())
+	co.HTTP.Handle("GET /", common.APIStatus(*co.Config.Meta))
 
 	co.Boot()
 
-	baseUrl := fmt.Sprintf("%s%d", co.Config.Host, co.Config.Port)
+	baseUrl := fmt.Sprintf("%s%d", co.Config.Server.Host, co.Config.Server.Port)
 
-	co.Logger.Debug(fmt.Sprintf("TimeToBoot = %s Running: Url = '%s' Path = '%s'", time.Since(co.startTime).String(), baseUrl, co.Config.Path), nil)
+	co.Logger.Debug(fmt.Sprintf("TimeToBoot = %s Running: Url = '%s' Path = '%s'", time.Since(co.startTime).String(), baseUrl, co.Config.Server.Path), nil)
 	e := co.provider.Run(baseUrl)
 
 	if e != nil {
@@ -76,15 +82,31 @@ func notImplemented(fname string) func() {
 	}
 }
 
-func Core(cfg CoreCfg) CoreCtx {
-	l := Logger("Core", cfg.Debug)
+func validateCoreConfig(config *CoreCfg) {
+	if config == nil {
+		ThrowError(Err{Message: "Core config cannot be nil"})
+	}
 
-	if !cfg.Debug {
+	if config.Server == nil {
+		ThrowError(Err{Message: "Core config.Server cannot be nil"})
+	}
+
+	if config.Meta == nil {
+		ThrowError(Err{Message: "Core config.Meta cannot be nil"})
+	}
+}
+
+func Core(config *CoreCfg) CoreCtx {
+	validateCoreConfig(config)
+
+	l := Logger("Core", config.Debug)
+
+	if !config.Debug {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
 	p := ExtHTTP()
-	r := p.Router(cfg.Server.Path)
+	r := p.Router(config.Server.Path)
 
 	h := HTTPController(r, l.NewChild("HTTPController"), ResponseMapper(l.NewChild("ResponseMapper")))
 
@@ -93,7 +115,7 @@ func Core(cfg CoreCfg) CoreCtx {
 		startTime:        time.Now(),
 		Router:           r,
 		HTTP:             h,
-		Config:           cfg,
+		Config:           config,
 		Logger:           l,
 		Setup:            notImplemented("Setup"),
 		InitComponents:   notImplemented("Init Components"),

@@ -83,8 +83,8 @@ func (c Env) GetIntArr(k string, def []int) ([]int, error) {
 	return is, e
 }
 
-func LoadEnv(cPath string) (Env, error) {
-	envs, err := godotenv.Read(cPath)
+func LoadEnv(envPath string) (Env, error) {
+	envs, err := godotenv.Read(envPath)
 
 	if err == nil {
 		for key, val := range envs {

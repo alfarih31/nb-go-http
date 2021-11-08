@@ -1,8 +1,8 @@
 package nbgohttp
 
 import (
-    "github.com/gin-gonic/gin"
-    "net/http"
+	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 type HandlerCtx struct {
@@ -13,13 +13,13 @@ type HandlerCtx struct {
 
 type HTTPHandler func(c *HandlerCtx) *Response
 
-func (c HandlerCtx) Response(status int, body string, heads ResponseHeader) (int, error) {
-	if heads != nil {
-		for key, val := range heads {
-            s, ok := val.(string)
-            if ok {
-                c.ext.Writer.Header().Set(key, s)   
-            }
+func (c HandlerCtx) Response(status int, body string, headers ResponseHeader) (int, error) {
+	if headers != nil {
+		for key, head := range headers {
+			s, ok := head.(string)
+			if ok {
+				c.ext.Writer.Header().Set(key, s)
+			}
 		}
 	}
 

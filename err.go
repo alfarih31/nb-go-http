@@ -1,8 +1,8 @@
 package nbgohttp
 
 import (
-    "encoding/json"
-    "runtime"
+	"encoding/json"
+	"runtime"
 )
 
 const AppErrName = "AppError"
@@ -24,10 +24,10 @@ type Trace struct {
 
 func traceError() []Trace {
 	tb := runtime.ReadTrace()
-    
+
 	st := runtime.Stack(tb, false)
 
-    var t []Trace
+	var t []Trace
 
 	for i := 0; i < st; i++ {
 		pc, file, line, ok := runtime.Caller(i)
@@ -45,7 +45,7 @@ func traceError() []Trace {
 		}
 	}
 
-	return t[6:len(t)-2]
+	return t[6 : len(t)-2]
 }
 
 func (e Err) Stack() []Trace {
@@ -72,28 +72,31 @@ func (e Err) Errors() interface{} {
 }
 
 func (e *Err) Throw(er *Err) {
-    if er.Name == "" {
-        er.Name = e.Name
-    }
+	if er != nil {
+		if er.Name == "" {
+			er.Name = e.Name
+		}
 
-    if er.Code == "" {
-        er.Code = e.Code
-    }
+		if er.Code == "" {
+			er.Code = e.Code
+		}
 
-    if er.Message == "" {
-        er.Message = e.Message
-    }
-    
-    
-    if er.Data == nil {
-        er.Data = e.Data
-    }
-    
-    if er.Err == nil {
-        er.Err = e.Err
-    }
+		if er.Message == "" {
+			er.Message = e.Message
+		}
 
-	panic(er)
+		if er.Data == nil {
+			er.Data = e.Data
+		}
+
+		if er.Err == nil {
+			er.Err = e.Err
+		}
+
+		panic(*er)
+	}
+
+	panic(*e)
 }
 
 func ThrowError(e Err) {
