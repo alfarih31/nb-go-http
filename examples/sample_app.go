@@ -1,7 +1,7 @@
 package main
 
 import (
-	"nb-go-http"
+	"github.com/alfarih31/nb-go-http"
 	"runtime/debug"
 )
 
