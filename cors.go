@@ -40,7 +40,7 @@ func (cr TCORS) PutCORS(w http.ResponseWriter) {
 		w.Header().Set(CORSAllowHeaders, cr.Config.AllowHeaders)
 	}
 
-	if cr.Config.AllowCredentials != true {
+	if cr.Config.AllowCredentials == true {
 		w.Header().Set(CORSAllowCredentials, BoolParser{cr.Config.AllowCredentials}.ToString())
 	}
 
