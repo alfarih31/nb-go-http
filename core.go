@@ -23,7 +23,7 @@ type CoreCtx struct {
 	Setup            func()
 }
 
-type Server struct {
+type ServerCfg struct {
 	Host string
 	Port int
 	Path string
@@ -32,8 +32,8 @@ type Server struct {
 
 type CoreCfg struct {
 	Debug  bool
-	Server *Server
-	Meta   *Meta
+	Server *ServerCfg
+	Meta   *KeyValue
 }
 
 func (co CoreCtx) Boot() {

@@ -10,7 +10,7 @@ type CommonController struct {
 	StartTime time.Time
 }
 
-func (cc CommonController) APIStatus(m Meta) HTTPHandler {
+func (cc CommonController) APIStatus(m KeyValue) HTTPHandler {
 	return func(c *HandlerCtx) *Response {
 		u := time.Since(cc.StartTime).String()
 
@@ -18,7 +18,7 @@ func (cc CommonController) APIStatus(m Meta) HTTPHandler {
 			"uptime": u,
 		}
 
-		data.Assign(KeyValueFromStruct(m))
+		data.Assign(m)
 
 		return &Response{
 			Body: ResponseBody{
