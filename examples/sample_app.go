@@ -8,7 +8,7 @@ import (
 func main() {
 	env, _ := nbgohttp.LoadEnv(".env")
 
-	rl := nbgohttp.Logger("RootLogger", true)
+	rl := nbgohttp.Logger("RootLogger")
 
 	isDebug, _ := env.GetBool("DEBUG", false)
 	basePath, _ := env.GetString("SERVER_PATH", "/")

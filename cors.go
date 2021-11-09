@@ -15,8 +15,6 @@ type CORSCfg struct {
 	AllowMethods     string
 	AllowHeaders     string
 	AllowCredentials bool
-
-	Load func(source interface{})
 }
 
 type TCORS struct {

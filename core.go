@@ -29,8 +29,6 @@ type CoreCfg struct {
 	Debug  bool
 	Server *ServerCfg
 	Meta   *KeyValue
-
-	Load func(source interface{})
 }
 
 func (co CoreCtx) Boot() {
@@ -91,7 +89,7 @@ func validateCoreConfig(config *CoreCfg) {
 func Core(config *CoreCfg) CoreCtx {
 	validateCoreConfig(config)
 
-	l := Logger("Core", config.Debug)
+	l := Logger("Core")
 
 	if !config.Debug {
 		gin.SetMode(gin.ReleaseMode)

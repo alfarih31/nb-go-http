@@ -9,7 +9,6 @@ type TLogger struct {
 	ServiceName string
 	Logger      *logrus.Logger
 	Entry       *logrus.Entry
-	IsDebug     bool
 }
 
 type ILogger interface {
@@ -56,12 +55,11 @@ func (l TLogger) NewChild(cname string) ILogger {
 	return l
 }
 
-func Logger(serviceName string, debug bool) ILogger {
+func Logger(serviceName string) ILogger {
 	l := TLogger{
 		ServiceName: serviceName,
 	}
 
-	l.IsDebug = debug
 	l.Logger = logrus.New()
 	l.Entry = l.Logger.WithFields(logrus.Fields{
 		"service": l.ServiceName,
