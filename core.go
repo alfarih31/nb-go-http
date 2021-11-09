@@ -52,12 +52,21 @@ func (co CoreCtx) Start() {
 
 	co.Boot()
 
-	baseUrl := fmt.Sprintf("%s%d", co.Config.Server.Host, co.Config.Server.Port)
+	if co.Config.Server.Host == "" {
+		co.Config.Server.Host = ":"
+	}
 
-	co.Logger.Info(fmt.Sprintf("TimeToBoot = %s Running: BaseUrl = '%s' Path = '%s'", time.Since(co.startTime).String(), baseUrl, co.Config.Server.Path), map[string]interface{}{
-		"url": fmt.Sprintf("%s%s", baseUrl, co.Config.Server.Path),
+	hostInfo := co.Config.Server.Host
+	if hostInfo == ":" {
+		hostInfo = "http://localhost"
+	}
+
+	baseUrlInfo := fmt.Sprintf("%s:%d", hostInfo, co.Config.Server.Port)
+
+	co.Logger.Info(fmt.Sprintf("TimeToBoot = %s Running: BaseUrl = '%s' Path = '%s'", time.Since(co.startTime).String(), baseUrlInfo, co.Config.Server.Path), map[string]interface{}{
+		"url": fmt.Sprintf("%s%s", baseUrlInfo, co.Config.Server.Path),
 	})
-	e := co.provider.Run(baseUrl)
+	e := co.provider.Run(fmt.Sprintf("%s%d", co.Config.Server.Host, co.Config.Server.Port))
 
 	if e != nil {
 		co.Logger.Error("Failed to start, error happened!", map[string]interface{}{"_error": e})
