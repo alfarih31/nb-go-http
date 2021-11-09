@@ -1,6 +1,7 @@
 package nbgohttp
 
 import (
+	"encoding/json"
 	"github.com/joho/godotenv"
 	"os"
 )
@@ -8,6 +9,15 @@ import (
 type Env struct {
 	envs    map[string]string
 	useEnvs bool
+}
+
+type IEnv interface {
+	GetInt(k string, def int) (int, error)
+	GetString(k string, def string) (string, error)
+	GetBool(k string, def bool) (bool, error)
+	GetStringArr(k string, def []string) ([]string, error)
+	GetIntArr(k string, def []int) ([]int, error)
+	Dump() (string, error)
 }
 
 func (c Env) GetInt(k string, def int) (int, error) {
@@ -81,6 +91,16 @@ func (c Env) GetIntArr(k string, def []int) ([]int, error) {
 	}
 
 	return is, e
+}
+
+func (c Env) Dump() (string, error) {
+	if !c.useEnvs {
+		return "", Err{Message: "Cannot dump env, you are using system-wide env!"}
+	}
+
+	j, e := json.Marshal(c.envs)
+
+	return string(j), e
 }
 
 func LoadEnv(envPath string) (Env, error) {

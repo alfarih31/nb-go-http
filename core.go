@@ -29,6 +29,8 @@ type CoreCfg struct {
 	Debug  bool
 	Server *ServerCfg
 	Meta   *KeyValue
+
+	Load func(source interface{})
 }
 
 func (co CoreCtx) Boot() {
