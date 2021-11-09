@@ -54,7 +54,9 @@ func (co CoreCtx) Start() {
 
 	baseUrl := fmt.Sprintf("%s%d", co.Config.Server.Host, co.Config.Server.Port)
 
-	co.Logger.Info(fmt.Sprintf("TimeToBoot = %s Running: Url = '%s' Path = '%s'", time.Since(co.startTime).String(), baseUrl, co.Config.Server.Path), nil)
+	co.Logger.Info(fmt.Sprintf("TimeToBoot = %s Running: BaseUrl = '%s' Path = '%s'", time.Since(co.startTime).String(), baseUrl, co.Config.Server.Path), map[string]interface{}{
+		"url": fmt.Sprintf("%s%s", baseUrl, co.Config.Server.Path),
+	})
 	e := co.provider.Run(baseUrl)
 
 	if e != nil {
