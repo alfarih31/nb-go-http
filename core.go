@@ -13,14 +13,9 @@ type CoreCtx struct {
 	Config    *CoreCfg
 	Logger    ILogger
 
-	HTTP           HTTPControllerCtx
-	InitComponents func()
+	HTTP HTTPControllerCtx
 
-	InitDatasource   func()
-	InitRepositories func()
-	InitServices     func()
-	InitControllers  func()
-	Setup            func()
+	Setup func()
 }
 
 type ServerCfg struct {
@@ -38,11 +33,6 @@ type CoreCfg struct {
 
 func (co CoreCtx) Boot() {
 	co.Setup()
-	co.InitComponents()
-	co.InitDatasource()
-	co.InitRepositories()
-	co.InitServices()
-	co.InitControllers()
 }
 
 func (co CoreCtx) Start() {
@@ -77,7 +67,7 @@ func (co CoreCtx) Start() {
 func notImplemented(fname string) func() {
 	return func() {
 		ThrowError(Err{
-			Message: fmt.Sprintf("%s Not Implemented", fname),
+			Message: fmt.Sprintf("Core.%s Not Implemented", fname),
 		})
 	}
 }
@@ -111,18 +101,13 @@ func Core(config *CoreCfg) CoreCtx {
 	h := HTTPController(r, l.NewChild("HTTPController"), ResponseMapper(l.NewChild("ResponseMapper")))
 
 	c := CoreCtx{
-		provider:         p,
-		startTime:        time.Now(),
-		Router:           r,
-		HTTP:             h,
-		Config:           config,
-		Logger:           l,
-		Setup:            notImplemented("Setup"),
-		InitComponents:   notImplemented("Init Components"),
-		InitDatasource:   notImplemented("Init Datasource"),
-		InitRepositories: notImplemented("Init Repositories"),
-		InitServices:     notImplemented("Init Services"),
-		InitControllers:  notImplemented("Init Controllers"),
+		provider:  p,
+		startTime: time.Now(),
+		Router:    r,
+		HTTP:      h,
+		Config:    config,
+		Logger:    l,
+		Setup:     notImplemented("Setup"),
 	}
 
 	return c

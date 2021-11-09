@@ -21,7 +21,7 @@ func main() {
 		Try: func() {
 			app := nbgohttp.Core(&nbgohttp.CoreCfg{
 				Debug: isDebug,
-				Server: &nbgohttp.Server{
+				Server: &nbgohttp.ServerCfg{
 					Host: baseHost,
 					Path: basePath,
 					Port: basePort,
@@ -29,30 +29,14 @@ func main() {
 						Enable: false,
 					},
 				},
-				Meta: &nbgohttp.Meta{},
+				Meta: &nbgohttp.KeyValue{
+					"app_name":        "test",
+					"app_version":     "v0.1.0",
+					"app_description": "Description",
+				},
 			})
 
 			app.Setup = func() {
-
-			}
-
-			app.InitComponents = func() {
-
-			}
-
-			app.InitRepositories = func() {
-
-			}
-
-			app.InitDatasource = func() {
-
-			}
-
-			app.InitServices = func() {
-
-			}
-
-			app.InitControllers = func() {
 				g := nbgohttp.HTTPController(app.Router.Branch("/test"), app.Logger.NewChild("TestController"), app.HTTP.ResponseMapper)
 
 				g.Handle("GET /first-inner", func(c *nbgohttp.HandlerCtx) *nbgohttp.Response {
