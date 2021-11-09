@@ -8,6 +8,7 @@ const CORSAllowOrigin = "Access-Control-Allow-Origin"
 const CORSAllowHeaders = "Access-Control-Allow-Headers"
 const CORSAllowMethods = "Access-Control-Allow-Methods"
 const CORSAllowCredentials = "Access-Control-Allow-Credentials"
+const CORSExposeHeaders = "Access-Control-Expose-Headers"
 
 type CORSCfg struct {
 	Enable           bool
@@ -15,6 +16,7 @@ type CORSCfg struct {
 	AllowMethods     string
 	AllowHeaders     string
 	AllowCredentials bool
+	ExposeHeaders    string
 }
 
 type TCORS struct {
@@ -26,10 +28,25 @@ type ICORS interface {
 }
 
 func (cr TCORS) PutCORS(w http.ResponseWriter) {
-	w.Header().Set(CORSAllowOrigin, cr.Config.AllowOrigins)
-	w.Header().Set(CORSAllowMethods, cr.Config.AllowMethods)
-	w.Header().Set(CORSAllowHeaders, cr.Config.AllowHeaders)
-	w.Header().Set(CORSAllowCredentials, BoolParser{cr.Config.AllowCredentials}.ToString())
+	if cr.Config.AllowOrigins != "" {
+		w.Header().Set(CORSAllowOrigin, cr.Config.AllowOrigins)
+	}
+
+	if cr.Config.AllowHeaders != "" {
+		w.Header().Set(CORSAllowMethods, cr.Config.AllowMethods)
+	}
+
+	if cr.Config.AllowHeaders != "" {
+		w.Header().Set(CORSAllowHeaders, cr.Config.AllowHeaders)
+	}
+
+	if cr.Config.AllowCredentials != true {
+		w.Header().Set(CORSAllowCredentials, BoolParser{cr.Config.AllowCredentials}.ToString())
+	}
+
+	if cr.Config.ExposeHeaders != "" {
+		w.Header().Set(CORSExposeHeaders, cr.Config.AllowHeaders)
+	}
 }
 
 func CORS(config *CORSCfg) HTTPHandler {
