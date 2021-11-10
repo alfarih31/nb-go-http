@@ -1,4 +1,4 @@
-package nbgohttp
+package nb_go
 
 type FuncRun struct {
 	Try     func()

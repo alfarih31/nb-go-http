@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	nbgohttp "github.com/alfarih31/nb-go-http/v1"
+	"github.com/alfarih31/nb-go-http"
 	"net/http"
 	"runtime/debug"
 )
@@ -17,7 +17,7 @@ const (
 	ErrorBadGateway   = "502"
 )
 
-var StandardResponses = map[string]nbgohttp.Response{
+var StandardResponses = map[string]nb_go.Response{
 	Success: {
 		Code: http.StatusOK,
 		Body: ResponseBody{
@@ -139,25 +139,25 @@ func (b ResponseBody) String() string {
 }
 
 func main() {
-	env, _ := nbgohttp.LoadEnv(".env")
+	env, _ := nb_go.LoadEnv(".env")
 
-	rl := nbgohttp.Logger("RootLogger")
+	rl := nb_go.Logger("RootLogger")
 
 	basePath, _ := env.GetString("SERVER_PATH", "/v1")
 	baseHost, _ := env.GetString("SERVER_HOST", ":")
 	basePort, _ := env.GetInt("SERVER_PORT", 8080)
 
-	nbgohttp.Func(nbgohttp.FuncRun{
+	nb_go.Func(nb_go.FuncRun{
 		Try: func() {
-			responseMapper := nbgohttp.ResponseMapper(nbgohttp.ResponseMapperCfg{
-				Logger:            nbgohttp.Logger("ResponseMapper"),
+			responseMapper := nb_go.ResponseMapper(nb_go.ResponseMapperCfg{
+				Logger:            nb_go.Logger("ResponseMapper"),
 				SuccessCode:       "OK",
 				InternalErrorCode: "500",
 			})
 			responseMapper.Load(StandardResponses)
 
-			app := nbgohttp.Core(&nbgohttp.CoreCfg{
-				Meta: &nbgohttp.KeyValue{
+			app := nb_go.Core(&nb_go.CoreCfg{
+				Meta: &nb_go.KeyValue{
 					"app_name":        "test",
 					"app_version":     "v0.1.0",
 					"app_description": "Description",
@@ -165,11 +165,11 @@ func main() {
 			})
 
 			app.Setup = func() {
-				g1 := nbgohttp.HTTPController(app.RootController.BranchRouter("/sample"), app.Logger.NewChild("G1-Controller"), responseMapper)
-				g2 := nbgohttp.HTTPController(g1.BranchRouter("/deep"), app.Logger.NewChild("G2-Controller"), responseMapper)
+				g1 := nb_go.HTTPController(app.RootController.BranchRouter("/sample"), app.Logger.NewChild("G1-Controller"), responseMapper)
+				g2 := nb_go.HTTPController(g1.BranchRouter("/deep"), app.Logger.NewChild("G2-Controller"), responseMapper)
 
-				g1.Handle("GET /first-inner", func(c *nbgohttp.HandlerCtx) *nbgohttp.Response {
-					return &nbgohttp.Response{
+				g1.Handle("GET /first-inner", func(c *nb_go.HandlerCtx) *nb_go.Response {
+					return &nb_go.Response{
 						Body: ResponseBody{
 							Status: ResponseStatus{
 								MessageClient: "G1 FIRST",
@@ -178,13 +178,13 @@ func main() {
 					}
 				})
 
-				g1.Handle("GET /error", func(c *nbgohttp.HandlerCtx) *nbgohttp.Response {
-					nbgohttp.HTTPError.BadGateway.Throw(nil)
+				g1.Handle("GET /error", func(c *nb_go.HandlerCtx) *nb_go.Response {
+					nb_go.HTTPError.BadGateway.Throw(nil)
 					return nil
 				})
 
-				g1.Handle("GET /second-inner", func(c *nbgohttp.HandlerCtx) *nbgohttp.Response {
-					return &nbgohttp.Response{
+				g1.Handle("GET /second-inner", func(c *nb_go.HandlerCtx) *nb_go.Response {
+					return &nb_go.Response{
 						Body: ResponseBody{
 							Status: ResponseStatus{
 								MessageClient: "G1 SECOND",
@@ -196,8 +196,8 @@ func main() {
 					}
 				})
 
-				g2.Handle("GET /first-inner", func(context *nbgohttp.HandlerCtx) *nbgohttp.Response {
-					return &nbgohttp.Response{
+				g2.Handle("GET /first-inner", func(context *nb_go.HandlerCtx) *nb_go.Response {
+					return &nb_go.Response{
 						Body: ResponseBody{
 							Status: ResponseStatus{
 								MessageClient: "G2 FIRST",
@@ -212,22 +212,22 @@ func main() {
 				app.Logger.Debug("Init Controllers OK...", nil)
 			}
 
-			app.Start(nbgohttp.StartArg{
+			app.Start(nb_go.StartArg{
 				Host:           baseHost,
 				Path:           basePath,
 				Port:           basePort,
 				ResponseMapper: &responseMapper,
-				CORS: &nbgohttp.CORSCfg{
+				CORS: &nb_go.CORSCfg{
 					Enable: true,
 				},
 			})
 		},
 		Catch: func(e interface{}) {
-			ee, ok := e.(nbgohttp.Err)
+			ee, ok := e.(nb_go.Err)
 
 			debug.PrintStack()
 			if ok {
-				rl.Error(ee, map[string]interface{}{"error": ee.Errors(), "stack": nbgohttp.StackTrace()})
+				rl.Error(ee, map[string]interface{}{"error": ee.Errors(), "stack": nb_go.StackTrace()})
 			} else {
 				rl.Error(ee, nil)
 			}
