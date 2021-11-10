@@ -1,4 +1,4 @@
-package nb_go
+package nbgohttp
 
 type httpError struct {
 	BadRequest   *Err

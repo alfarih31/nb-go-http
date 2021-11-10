@@ -1,4 +1,4 @@
-package nb_go
+package nbgohttp
 
 import (
 	"github.com/gin-gonic/gin"

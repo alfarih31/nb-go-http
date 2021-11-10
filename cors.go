@@ -1,4 +1,4 @@
-package nb_go
+package nbgohttp
 
 import (
 	"net/http"
