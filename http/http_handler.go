@@ -1,25 +1,23 @@
-package nbgohttp
+package http
 
 import (
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
 type HandlerCtx struct {
-	ext     *ExtHandlerCtx
+	Ext     *ExtHandlerCtx
 	Request *http.Request
 	Params  *gin.Params
 }
 
-type HTTPHandler func(c *HandlerCtx) *Response
+type HTTPHandler func(context *HandlerCtx) *Response
 
-func (c HandlerCtx) Response(status int, body string, headers ResponseHeader) (int, error) {
+func (c HandlerCtx) response(status int, body interface{}, headers map[string]string) (int, error) {
 	if headers != nil {
 		for key, head := range headers {
-			s, ok := head.(string)
-			if ok {
-				c.ext.Writer.Header().Set(key, s)
-			}
+			c.Ext.Writer.Header().Set(key, head)
 		}
 	}
 
@@ -28,17 +26,24 @@ func (c HandlerCtx) Response(status int, body string, headers ResponseHeader) (i
 		status = 500
 	}
 
-	c.ext.Writer.WriteHeader(status)
-	return c.ext.Writer.WriteString(body)
+	c.Ext.Writer.WriteHeader(status)
+
+	j, e := json.Marshal(body)
+
+	if e != nil {
+		return 0, e
+	}
+
+	return c.Ext.Writer.WriteString(string(j))
 }
 
 func (c HandlerCtx) Next() {
-	c.ext.Next()
+	c.Ext.Next()
 }
 
 func WrapExtHandlerCtx(ec *ExtHandlerCtx) *HandlerCtx {
 	return &HandlerCtx{
-		ext:     ec,
+		Ext:     ec,
 		Request: ec.Request,
 		Params:  &ec.Params,
 	}

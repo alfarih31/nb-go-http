@@ -1,4 +1,4 @@
-package nbgohttp
+package http
 
 import (
 	"github.com/gin-gonic/gin"
@@ -7,7 +7,9 @@ import (
 type ExtHandlerCtx = gin.Context
 type ExtHandler = gin.HandlerFunc
 type ExtRouter struct {
-	router *gin.RouterGroup
+	path     string
+	fullPath string
+	router   *gin.RouterGroup
 }
 
 func (e *ExtRouter) Handlers() []ExtHandler {
@@ -26,9 +28,11 @@ func (e *ExtRouter) AppendHandlers(handlers []ExtHandler) {
 	e.router.Handlers = mergedHandlers
 }
 
-func (e *ExtRouter) Branch(path string) *ExtRouter {
+func (e *ExtRouter) Branch(path string, fullPath string) *ExtRouter {
 	return &ExtRouter{
-		router: e.router.Group(path),
+		path:     path,
+		fullPath: fullPath,
+		router:   e.router.Group(path),
 	}
 }
 
@@ -75,7 +79,9 @@ type THTTPProvider struct {
 
 func (t THTTPProvider) Router(path string) *ExtRouter {
 	return &ExtRouter{
-		router: t.Engine.Group(path),
+		path:     path,
+		fullPath: path,
+		router:   t.Engine.Group(path),
 	}
 }
 

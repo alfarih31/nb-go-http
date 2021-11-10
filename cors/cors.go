@@ -1,6 +1,8 @@
-package nbgohttp
+package cors
 
 import (
+	"github.com/alfarih31/nb-go-http/data"
+	http2 "github.com/alfarih31/nb-go-http/http"
 	"net/http"
 )
 
@@ -41,7 +43,7 @@ func (cr TCORS) PutCORS(w http.ResponseWriter) {
 	}
 
 	if cr.Config.AllowCredentials == true {
-		w.Header().Set(CORSAllowCredentials, BoolParser{cr.Config.AllowCredentials}.ToString())
+		w.Header().Set(CORSAllowCredentials, data.BoolParser{cr.Config.AllowCredentials}.ToString())
 	}
 
 	if cr.Config.ExposeHeaders != "" {
@@ -49,16 +51,16 @@ func (cr TCORS) PutCORS(w http.ResponseWriter) {
 	}
 }
 
-func CORS(config *CORSCfg) HTTPHandler {
+func CORS(config *CORSCfg) http2.HTTPHandler {
 	cors := TCORS{
 		Config: config,
 	}
 
-	return func(c *HandlerCtx) *Response {
-		cors.PutCORS(c.ext.Writer)
+	return func(c *http2.HandlerCtx) *http2.Response {
+		cors.PutCORS(c.Ext.Writer)
 
 		if c.Request.Method == http.MethodOptions {
-			return &Response{}
+			return &http2.Response{}
 		}
 
 		c.Next()

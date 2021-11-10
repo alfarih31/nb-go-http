@@ -1,4 +1,4 @@
-package nbgohttp
+package logger
 
 import (
 	"github.com/sirupsen/logrus"
