@@ -9,6 +9,7 @@ import (
 )
 
 const (
+	Empty             = ""
 	Success           = "OK"
 	ErrorBadRequest   = "400"
 	ErrorUnauthorized = "401"
@@ -19,6 +20,16 @@ const (
 )
 
 var StandardResponses = map[string]nbgohttp.Response{
+	Empty: {
+		Code: http.StatusOK,
+		Body: ResponseBody{
+			Status: ResponseStatus{
+				Code:          0,
+				MessageClient: "Success",
+				MessageServer: "Success",
+			},
+		},
+	},
 	Success: {
 		Code: http.StatusOK,
 		Body: ResponseBody{
@@ -197,16 +208,8 @@ func main() {
 				})
 
 				g1.Handle("GET /second-inner", func(c *nbgohttp.HandlerCtx) *nbgohttp.Response {
-					return &nbgohttp.Response{
-						Body: ResponseBody{
-							Status: ResponseStatus{
-								MessageClient: "G1 SECOND",
-							},
-							Data: []string{
-								"1", "2", "3",
-							},
-						},
-					}
+					res, _ := StandardResponses[Success]
+					return &res
 				})
 
 				g2.Handle("GET /first-inner", func(context *nbgohttp.HandlerCtx) *nbgohttp.Response {

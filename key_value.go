@@ -2,6 +2,8 @@ package nbgohttp
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"reflect"
 )
 
@@ -13,8 +15,8 @@ func (k KeyValue) AssignTo(target KeyValue, replaceExist bool) {
 
 		// Recursive assignTo
 		if reflect.ValueOf(val).Kind() == reflect.Map && reflect.ValueOf(targetValue).Kind() == reflect.Map {
-			sourceKvVal := KeyValueFromStruct(val)
-			targetKvVal := KeyValueFromStruct(targetValue)
+			sourceKvVal, _ := KeyValueFromStruct(val)
+			targetKvVal, _ := KeyValueFromStruct(targetValue)
 
 			sourceKvVal.AssignTo(targetKvVal, replaceExist)
 
@@ -44,8 +46,8 @@ func (k KeyValue) Assign(source KeyValue, replaceExist bool) {
 
 		// Recursive assign
 		if reflect.ValueOf(val).Kind() == reflect.Map && reflect.ValueOf(existingValue).Kind() == reflect.Map {
-			sourceKvVal := KeyValueFromStruct(val)
-			existingKvVal := KeyValueFromStruct(existingValue)
+			sourceKvVal, _ := KeyValueFromStruct(val)
+			existingKvVal, _ := KeyValueFromStruct(existingValue)
 
 			existingKvVal.Assign(sourceKvVal, replaceExist)
 
@@ -86,7 +88,16 @@ func (k KeyValue) Values() []interface{} {
 	return values
 }
 
-func StructToMapString(strct interface{}) map[string]interface{} {
+func StructToMap(strct interface{}) (map[string]interface{}, error) {
+	tStruct := reflect.TypeOf(strct).Kind()
+	if tStruct == reflect.Map {
+		return strct.(map[string]interface{}), nil
+	}
+
+	if tStruct != reflect.Struct {
+		return nil, errors.New(fmt.Sprintf("val not a struct type: %s", tStruct))
+	}
+
 	j, e := json.Marshal(strct)
 
 	if e != nil {
@@ -100,19 +111,23 @@ func StructToMapString(strct interface{}) map[string]interface{} {
 	e = json.Unmarshal(j, &t)
 
 	if e != nil {
-		ThrowError(&Err{
-			Err: e,
-		})
+		return nil, e
 	}
 
-	return t
+	return t, nil
 }
 
-func KeyValueFromStruct(strct interface{}) KeyValue {
+func KeyValueFromStruct(strct interface{}) (KeyValue, error) {
+	mapString, err := StructToMap(strct)
+
+	if err != nil {
+		return nil, err
+	}
+
 	kv := KeyValue{}
-	for key, val := range StructToMapString(strct) {
+	for key, val := range mapString {
 		kv[key] = val
 	}
 
-	return kv
+	return kv, nil
 }

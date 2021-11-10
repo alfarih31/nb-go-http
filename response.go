@@ -11,14 +11,7 @@ func (r Response) ComposeTo(res *Response) {
 		res.Header = r.Header
 	}
 
-	if res.Body != nil {
-		body := KeyValueFromStruct(res.Body)
-		body.Assign(KeyValueFromStruct(r.Body), false)
-
-		res.Body = body
-	} else {
-		res.Body = r.Body
-	}
+	res.ComposeBody(r.Body)
 
 	if res.Code == 0 {
 		res.Code = r.Code
@@ -50,8 +43,18 @@ func (r *Response) ComposeBody(body interface{}) {
 		return
 	}
 
-	kvBody := KeyValueFromStruct(body)
-	kvBody.Assign(KeyValueFromStruct(r.Body), false)
+	sourceBody, err := KeyValueFromStruct(body)
+	if err != nil {
+		r.Body = body
+		return
+	}
 
-	r.Body = kvBody
+	targetBody, err := KeyValueFromStruct(r.Body)
+	if err != nil {
+		return
+	}
+
+	targetBody.Assign(sourceBody, false)
+
+	r.Body = targetBody
 }
