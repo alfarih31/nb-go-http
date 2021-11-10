@@ -176,7 +176,7 @@ func main() {
 					"app_version":     "v0.1.0",
 					"app_description": "Description",
 				},
-			})
+			}).WithContext(ctx)
 
 			app.Provider.Engine.NoRoute()
 
@@ -227,8 +227,6 @@ func main() {
 
 				app.Logger.Debug("Init Controllers OK...", nil)
 			}
-
-			app.WithContext(ctx)
 
 			app.Start(nbgohttp.StartArg{
 				Host: baseHost,
