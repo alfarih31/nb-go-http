@@ -3,13 +3,13 @@ module github.com/alfarih31/nb-go-http
 go 1.17
 
 require (
+	github.com/DataDog/gostackparse v0.5.0
 	github.com/gin-gonic/gin v1.7.4
 	github.com/joho/godotenv v1.4.0
 	github.com/sirupsen/logrus v1.8.1
 )
 
 require (
-	github.com/DataDog/gostackparse v0.5.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
