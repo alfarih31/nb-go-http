@@ -6,6 +6,8 @@ type httpError struct {
 	Forbidden    *Err
 	Internal     *Err
 	BadGateway   *Err
+	NotFound     *Err
+	NoMethod     *Err
 }
 
 var HTTPError = httpError{
@@ -28,5 +30,13 @@ var HTTPError = httpError{
 	BadGateway: NewError(Err{
 		Code:    "502",
 		Message: "Bad Gateway",
+	}),
+	NotFound: NewError(Err{
+		Code:    "404",
+		Message: "Not Found",
+	}),
+	NoMethod: NewError(Err{
+		Code:    "405",
+		Message: "No Method",
 	}),
 }

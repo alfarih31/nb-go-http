@@ -68,16 +68,11 @@ func (e *ExtRouter) USE(handlers ...ExtHandler) {
 	e.router.Use(handlers...)
 }
 
-type IHTTPProvider interface {
-	Router(path string) *ExtRouter
-	Run(url string) error
-}
-
-type THTTPProvider struct {
+type HTTPProviderCtx struct {
 	Engine *gin.Engine
 }
 
-func (t THTTPProvider) Router(path string) *ExtRouter {
+func (t HTTPProviderCtx) Router(path string) *ExtRouter {
 	return &ExtRouter{
 		path:     path,
 		fullPath: path,
@@ -85,12 +80,12 @@ func (t THTTPProvider) Router(path string) *ExtRouter {
 	}
 }
 
-func (t THTTPProvider) Run(url string) error {
+func (t HTTPProviderCtx) Run(url string) error {
 	return t.Engine.Run(url)
 }
 
-func ExtHTTP() IHTTPProvider {
-	h := THTTPProvider{
+func ExtHTTP() *HTTPProviderCtx {
+	h := &HTTPProviderCtx{
 		Engine: gin.New(),
 	}
 

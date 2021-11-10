@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/alfarih31/nb-go-http"
 	"net/http"
@@ -139,6 +140,7 @@ func (b ResponseBody) String() string {
 }
 
 func main() {
+	ctx := context.Background()
 	env, _ := nbgohttp.LoadEnv(".env")
 
 	rl := nbgohttp.Logger("RootLogger")
@@ -157,6 +159,7 @@ func main() {
 			responseMapper.Load(StandardResponses)
 
 			app := nbgohttp.Core(&nbgohttp.CoreCfg{
+				ResponseMapper: responseMapper,
 				Meta: &nbgohttp.KeyValue{
 					"app_name":        "test",
 					"app_version":     "v0.1.0",
@@ -164,9 +167,19 @@ func main() {
 				},
 			})
 
+			app.Provider.Engine.NoRoute()
+
 			app.Setup = func() {
-				g1 := nbgohttp.HTTPController(app.RootController.BranchRouter("/sample"), app.Logger.NewChild("G1-Controller"), responseMapper)
-				g2 := nbgohttp.HTTPController(g1.BranchRouter("/deep"), app.Logger.NewChild("G2-Controller"), responseMapper)
+				g1 := nbgohttp.HTTPController(nbgohttp.HTTPControllerArg{
+					Router:         app.RootController.BranchRouter("/sample"),
+					Logger:         app.Logger.NewChild("G1-Controller"),
+					ResponseMapper: responseMapper,
+				})
+				g2 := nbgohttp.HTTPController(nbgohttp.HTTPControllerArg{
+					Router:         app.RootController.BranchRouter("/deep"),
+					Logger:         app.Logger.NewChild("G2-Controller"),
+					ResponseMapper: responseMapper,
+				})
 
 				g1.Handle("GET /first-inner", func(c *nbgohttp.HandlerCtx) *nbgohttp.Response {
 					return &nbgohttp.Response{
@@ -212,11 +225,12 @@ func main() {
 				app.Logger.Debug("Init Controllers OK...", nil)
 			}
 
+			app.WithContext(ctx)
+
 			app.Start(nbgohttp.StartArg{
-				Host:           baseHost,
-				Path:           basePath,
-				Port:           basePort,
-				ResponseMapper: &responseMapper,
+				Host: baseHost,
+				Path: basePath,
+				Port: basePort,
 				CORS: &nbgohttp.CORSCfg{
 					Enable: true,
 				},

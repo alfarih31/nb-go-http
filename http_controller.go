@@ -1,6 +1,7 @@
 package nbgohttp
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"net/http"
@@ -11,10 +12,18 @@ import (
 const abortIndex int8 = math.MaxInt8 / 2
 
 type HTTPControllerCtx struct {
+	Context        context.Context
 	router         *ExtRouter
 	Logger         ILogger
-	ResponseMapper IResponseMapper
+	ResponseMapper *ResponseMapperCtx
 	Debug          bool
+}
+
+type HTTPControllerArg struct {
+	Context        context.Context
+	Router         *ExtRouter
+	Logger         ILogger
+	ResponseMapper *ResponseMapperCtx
 }
 
 type HandlerSpec struct {
@@ -166,24 +175,38 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}) {
 	}
 }
 
-func (h *HTTPControllerCtx) SetRouter(r ExtRouter) {
-	if &r == nil {
+func (h *HTTPControllerCtx) SetRouter(r *ExtRouter) {
+	if r == nil {
 		ThrowError(&Err{Message: "setRouter r cannot be nil!"})
 	}
 
-	h.router = &r
+	h.router = r
 }
 
-func HTTPController(router *ExtRouter, logger ILogger, responseMapper IResponseMapper) *HTTPControllerCtx {
+func (h *HTTPControllerCtx) WithContext(ctx context.Context) *HTTPControllerCtx {
+	return HTTPController(HTTPControllerArg{
+		Context:        ctx,
+		Router:         h.router,
+		Logger:         h.Logger,
+		ResponseMapper: h.ResponseMapper,
+	})
+}
+
+func HTTPController(arg HTTPControllerArg) *HTTPControllerCtx {
 	isDebug, _ := StringParser{os.Getenv("DEBUG")}.ToBool()
 
-	logger.Debug("OK", nil)
+	arg.Logger.Debug("OK", nil)
 
 	h := &HTTPControllerCtx{
-		router:         router,
-		Logger:         logger,
-		ResponseMapper: responseMapper,
+		Context:        arg.Context,
+		router:         arg.Router,
+		Logger:         arg.Logger,
+		ResponseMapper: arg.ResponseMapper,
 		Debug:          isDebug,
+	}
+
+	if arg.Context != nil && arg.ResponseMapper != nil {
+		arg.ResponseMapper = arg.ResponseMapper.WithContext(arg.Context)
 	}
 
 	return h

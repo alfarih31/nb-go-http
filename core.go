@@ -1,6 +1,7 @@
 package nbgohttp
 
 import (
+	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"os"
@@ -8,8 +9,9 @@ import (
 )
 
 type CoreCtx struct {
+	Context   context.Context
 	startTime time.Time
-	Provider  IHTTPProvider
+	Provider  *HTTPProviderCtx
 	Logger    ILogger
 
 	RootController *HTTPControllerCtx
@@ -19,15 +21,16 @@ type CoreCtx struct {
 }
 
 type StartArg struct {
-	Host           string
-	Port           int
-	Path           string
-	CORS           *CORSCfg
-	ResponseMapper *IResponseMapper
+	Host string
+	Port int
+	Path string
+	CORS *CORSCfg
 }
 
 type CoreCfg struct {
-	Meta *KeyValue
+	Context        context.Context
+	Meta           *KeyValue
+	ResponseMapper *ResponseMapperCtx
 }
 
 func (co *CoreCtx) Boot() {
@@ -35,16 +38,14 @@ func (co *CoreCtx) Boot() {
 }
 
 func (co *CoreCtx) Start(cfg StartArg) {
-	if cfg.ResponseMapper == nil {
-		ThrowError(&Err{Message: "ResponseMapper nil!"})
-	}
-
-	co.RootController = HTTPController(co.Provider.Router(cfg.Path), co.Logger.NewChild("RootController"), *cfg.ResponseMapper)
-
 	common := CommonController{
 		Logger:    co.Logger.NewChild("CommonController"),
 		StartTime: time.Now(),
 	}
+
+	co.RootController.SetRouter(co.Provider.Router(cfg.Path))
+
+	co.Provider.Engine.NoRoute(co.RootController.ToExtHandlers([]HTTPHandler{common.RequestLogger(), common.HandleNotFound()})...)
 
 	co.RootController.Handle("USE", common.RequestLogger())
 
@@ -97,6 +98,18 @@ func validateCoreConfig(config *CoreCfg) {
 	if config.Meta == nil {
 		ThrowError(&Err{Message: "Core config.Meta cannot be nil"})
 	}
+
+	if config.ResponseMapper == nil {
+		ThrowError(&Err{Message: "Core config.ResponseMapper cannot be nil"})
+	}
+}
+
+func (c *CoreCtx) WithContext(ctx context.Context) *CoreCtx {
+	return Core(&CoreCfg{
+		ResponseMapper: c.RootController.ResponseMapper,
+		Context:        ctx,
+		Meta:           &c.Meta,
+	})
 }
 
 func Core(config *CoreCfg) *CoreCtx {
@@ -112,12 +125,23 @@ func Core(config *CoreCfg) *CoreCtx {
 
 	p := ExtHTTP()
 
+	rc := HTTPController(HTTPControllerArg{
+		Logger:         l.NewChild("RootController"),
+		ResponseMapper: config.ResponseMapper,
+	})
+
 	c := &CoreCtx{
-		Provider:  p,
-		startTime: time.Now(),
-		Meta:      *config.Meta,
-		Logger:    l,
-		Setup:     notImplemented("Setup"),
+		Context:        config.Context,
+		Provider:       p,
+		startTime:      time.Now(),
+		Meta:           *config.Meta,
+		Logger:         l,
+		Setup:          notImplemented("Setup"),
+		RootController: rc,
+	}
+
+	if config.Context != nil {
+		c.RootController = c.RootController.WithContext(config.Context)
 	}
 
 	return c
