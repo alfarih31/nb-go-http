@@ -1,7 +1,6 @@
-package data
+package nbgohttp
 
 import (
-	"github.com/alfarih31/nb-go-http/app_error"
 	"strconv"
 	"strings"
 )
@@ -33,7 +32,7 @@ func (s StringParser) ToBool() (bool, error) {
 	case "0":
 		return false, nil
 	default:
-		return false, &apperror.Err{Message: "string cannot be converted to bool"}
+		return false, &Err{Message: "string cannot be converted to bool"}
 	}
 }
 

@@ -1,4 +1,4 @@
-package http
+package nbgohttp
 
 import (
 	"encoding/json"

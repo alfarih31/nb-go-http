@@ -1,14 +1,12 @@
-package http
+package nbgohttp
 
 import (
 	"fmt"
-	"github.com/alfarih31/nb-go-http/app_error"
-	"github.com/alfarih31/nb-go-http/logger"
 	"net/http"
 )
 
 type ResponseMapperCfg struct {
-	Logger            logger.ILogger
+	Logger            ILogger
 	SuccessCode       string
 	InternalErrorCode string
 }
@@ -20,7 +18,7 @@ type DefaultResponse struct {
 
 type TResponseMapper struct {
 	Responses         map[string]Response
-	Logger            logger.ILogger
+	Logger            ILogger
 	successCode       string
 	internalErrorCode string
 	defaults          DefaultResponse
@@ -85,7 +83,7 @@ func (m *TResponseMapper) Get(code string, options *struct{ Success bool }) Resp
 
 func ResponseMapper(cfg ResponseMapperCfg) IResponseMapper {
 	if cfg.Logger == nil {
-		apperror.ThrowError(&apperror.Err{Message: "ResponseMapper Logger cannot be nil!"})
+		ThrowError(&Err{Message: "ResponseMapper Logger cannot be nil!"})
 	}
 
 	cfg.Logger.Debug("OK", nil)

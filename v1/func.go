@@ -1,12 +1,12 @@
-package utils
+package nbgohttp
 
-type Run struct {
+type FuncRun struct {
 	Try     func()
 	Catch   func(e interface{})
 	Finally func()
 }
 
-func Func(ru Run) {
+func Func(ru FuncRun) {
 	if ru.Finally != nil {
 		defer ru.Finally()
 	}

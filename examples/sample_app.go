@@ -2,14 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/alfarih31/nb-go-http/app_error"
-	"github.com/alfarih31/nb-go-http/core"
-	"github.com/alfarih31/nb-go-http/cors"
-	"github.com/alfarih31/nb-go-http/data"
-	"github.com/alfarih31/nb-go-http/env"
-	http2 "github.com/alfarih31/nb-go-http/http"
-	"github.com/alfarih31/nb-go-http/logger"
-	"github.com/alfarih31/nb-go-http/utils"
+	nbgohttp "github.com/alfarih31/nb-go-http/v1"
 	"net/http"
 	"runtime/debug"
 )
@@ -24,7 +17,7 @@ const (
 	ErrorBadGateway   = "502"
 )
 
-var StandardResponses = map[string]http2.Response{
+var StandardResponses = map[string]nbgohttp.Response{
 	Success: {
 		Code: http.StatusOK,
 		Body: ResponseBody{
@@ -97,8 +90,6 @@ var StandardResponses = map[string]http2.Response{
 	},
 }
 
-type ResponseHeader = data.KeyValue
-
 type ResponseStatus struct {
 	Code          int    `json:"code"`
 	MessageClient string `json:"message_client"`
@@ -148,25 +139,25 @@ func (b ResponseBody) String() string {
 }
 
 func main() {
-	env, _ := env.LoadEnv(".env")
+	env, _ := nbgohttp.LoadEnv(".env")
 
-	rl := logger.Logger("RootLogger")
+	rl := nbgohttp.Logger("RootLogger")
 
 	basePath, _ := env.GetString("SERVER_PATH", "/v1")
 	baseHost, _ := env.GetString("SERVER_HOST", ":")
 	basePort, _ := env.GetInt("SERVER_PORT", 8080)
 
-	utils.Func(utils.Run{
+	nbgohttp.Func(nbgohttp.FuncRun{
 		Try: func() {
-			responseMapper := http2.ResponseMapper(http2.ResponseMapperCfg{
-				Logger:            logger.Logger("ResponseMapper"),
+			responseMapper := nbgohttp.ResponseMapper(nbgohttp.ResponseMapperCfg{
+				Logger:            nbgohttp.Logger("ResponseMapper"),
 				SuccessCode:       "OK",
 				InternalErrorCode: "500",
 			})
 			responseMapper.Load(StandardResponses)
 
-			app := core.Core(&core.CoreCfg{
-				Meta: &data.KeyValue{
+			app := nbgohttp.Core(&nbgohttp.CoreCfg{
+				Meta: &nbgohttp.KeyValue{
 					"app_name":        "test",
 					"app_version":     "v0.1.0",
 					"app_description": "Description",
@@ -174,11 +165,11 @@ func main() {
 			})
 
 			app.Setup = func() {
-				g1 := http2.HTTPController(app.RootController.BranchRouter("/sample"), app.Logger.NewChild("G1-Controller"), responseMapper)
-				g2 := http2.HTTPController(g1.BranchRouter("/deep"), app.Logger.NewChild("G2-Controller"), responseMapper)
+				g1 := nbgohttp.HTTPController(app.RootController.BranchRouter("/sample"), app.Logger.NewChild("G1-Controller"), responseMapper)
+				g2 := nbgohttp.HTTPController(g1.BranchRouter("/deep"), app.Logger.NewChild("G2-Controller"), responseMapper)
 
-				g1.Handle("GET /first-inner", func(c *http2.HandlerCtx) *http2.Response {
-					return &http2.Response{
+				g1.Handle("GET /first-inner", func(c *nbgohttp.HandlerCtx) *nbgohttp.Response {
+					return &nbgohttp.Response{
 						Body: ResponseBody{
 							Status: ResponseStatus{
 								MessageClient: "G1 FIRST",
@@ -187,13 +178,13 @@ func main() {
 					}
 				})
 
-				g1.Handle("GET /error", func(c *http2.HandlerCtx) *http2.Response {
-					http2.HTTPError.BadGateway.Throw(nil)
+				g1.Handle("GET /error", func(c *nbgohttp.HandlerCtx) *nbgohttp.Response {
+					nbgohttp.HTTPError.BadGateway.Throw(nil)
 					return nil
 				})
 
-				g1.Handle("GET /second-inner", func(c *http2.HandlerCtx) *http2.Response {
-					return &http2.Response{
+				g1.Handle("GET /second-inner", func(c *nbgohttp.HandlerCtx) *nbgohttp.Response {
+					return &nbgohttp.Response{
 						Body: ResponseBody{
 							Status: ResponseStatus{
 								MessageClient: "G1 SECOND",
@@ -205,8 +196,8 @@ func main() {
 					}
 				})
 
-				g2.Handle("GET /first-inner", func(context *http2.HandlerCtx) *http2.Response {
-					return &http2.Response{
+				g2.Handle("GET /first-inner", func(context *nbgohttp.HandlerCtx) *nbgohttp.Response {
+					return &nbgohttp.Response{
 						Body: ResponseBody{
 							Status: ResponseStatus{
 								MessageClient: "G2 FIRST",
@@ -221,22 +212,22 @@ func main() {
 				app.Logger.Debug("Init Controllers OK...", nil)
 			}
 
-			app.Start(core.StartArg{
+			app.Start(nbgohttp.StartArg{
 				Host:           baseHost,
 				Path:           basePath,
 				Port:           basePort,
 				ResponseMapper: &responseMapper,
-				CORS: &cors.CORSCfg{
+				CORS: &nbgohttp.CORSCfg{
 					Enable: true,
 				},
 			})
 		},
 		Catch: func(e interface{}) {
-			ee, ok := e.(apperror.Err)
+			ee, ok := e.(nbgohttp.Err)
 
 			debug.PrintStack()
 			if ok {
-				rl.Error(ee, map[string]interface{}{"error": ee.Errors(), "stack": apperror.StackTrace()})
+				rl.Error(ee, map[string]interface{}{"error": ee.Errors(), "stack": nbgohttp.StackTrace()})
 			} else {
 				rl.Error(ee, nil)
 			}

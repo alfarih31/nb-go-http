@@ -1,4 +1,4 @@
-package apperror
+package nbgohttp
 
 import (
 	"bytes"

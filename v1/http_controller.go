@@ -1,11 +1,7 @@
-package http
+package nbgohttp
 
 import (
 	"fmt"
-	"github.com/alfarih31/nb-go-http/app_error"
-	"github.com/alfarih31/nb-go-http/data"
-	"github.com/alfarih31/nb-go-http/logger"
-	"github.com/alfarih31/nb-go-http/utils"
 	"math"
 	"net/http"
 	"os"
@@ -16,7 +12,7 @@ const abortIndex int8 = math.MaxInt8 / 2
 
 type HTTPControllerCtx struct {
 	router         *ExtRouter
-	Logger         logger.ILogger
+	Logger         ILogger
 	ResponseMapper IResponseMapper
 	Debug          bool
 }
@@ -28,7 +24,7 @@ type HandlerSpec struct {
 
 func (h HTTPControllerCtx) GetSpec(spec string) HandlerSpec {
 	if spec == "" {
-		apperror.ThrowError(&apperror.Err{Message: "Handler Spec cannot be empty!"})
+		ThrowError(&Err{Message: "Handler Spec cannot be empty!"})
 	}
 	specArr := make([]string, 2, 2)
 
@@ -55,7 +51,7 @@ func (h HTTPControllerCtx) GetSpec(spec string) HandlerSpec {
 func (h HTTPControllerCtx) ToExtHandler(handler HTTPHandler) ExtHandler {
 	return func(ec *ExtHandlerCtx) {
 		c := WrapExtHandlerCtx(ec)
-		utils.Func(utils.Run{
+		Func(Run{
 			Try: func() {
 				res := handler(c)
 
@@ -90,7 +86,7 @@ func (h *HTTPControllerCtx) BranchRouter(path string) *ExtRouter {
 
 func (h *HTTPControllerCtx) Handle(spec string, handlers ...HTTPHandler) {
 	if &h.router == nil {
-		apperror.ThrowError(&apperror.Err{Message: "Cannot Set Spec, router is nil"})
+		ThrowError(&Err{Message: "Cannot Set Spec, router is nil"})
 	}
 
 	handlerSpec := h.GetSpec(spec)
@@ -113,7 +109,7 @@ func (h *HTTPControllerCtx) Handle(spec string, handlers ...HTTPHandler) {
 	case "USE":
 		h.router.USE(h.ToExtHandlers(handlers)...)
 	default:
-		apperror.ThrowError(&apperror.Err{Message: fmt.Sprintf("Unknown HTTP Handle Spec: %s", spec)})
+		ThrowError(&Err{Message: fmt.Sprintf("Unknown HTTP Handle Spec: %s", spec)})
 	}
 }
 
@@ -133,7 +129,7 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}) {
 	r := h.ResponseMapper.GetInternalError()
 
 	switch er := e.(type) {
-	case *apperror.Err:
+	case *Err:
 		r = h.ResponseMapper.Get(er.Code, nil)
 
 		if !h.Debug {
@@ -141,9 +137,9 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}) {
 		}
 
 		if r.Code == http.StatusInternalServerError {
-			r.ComposeBody(data.KeyValue{"errors": er})
+			r.ComposeBody(KeyValue{"errors": er})
 		}
-	case apperror.Err:
+	case Err:
 		r = h.ResponseMapper.Get(er.Code, nil)
 
 		if !h.Debug {
@@ -151,16 +147,16 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}) {
 		}
 
 		if r.Code == http.StatusInternalServerError {
-			r.ComposeBody(data.KeyValue{"errors": er})
+			r.ComposeBody(KeyValue{"errors": er})
 		}
 	case Response:
 		r = er
 	case *Response:
 		r = *er
 	case error:
-		r.ComposeBody(data.KeyValue{"errors": er})
+		r.ComposeBody(KeyValue{"errors": er})
 	case string:
-		r.ComposeBody(data.KeyValue{"errors": er})
+		r.ComposeBody(KeyValue{"errors": er})
 	}
 
 	_, rEr := c.response(r.Code, r.Body, r.Header)
@@ -172,14 +168,14 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}) {
 
 func (h *HTTPControllerCtx) SetRouter(r ExtRouter) {
 	if &r == nil {
-		apperror.ThrowError(&apperror.Err{Message: "setRouter r cannot be nil!"})
+		ThrowError(&Err{Message: "setRouter r cannot be nil!"})
 	}
 
 	h.router = &r
 }
 
-func HTTPController(router *ExtRouter, logger logger.ILogger, responseMapper IResponseMapper) *HTTPControllerCtx {
-	isDebug, _ := data.StringParser{os.Getenv("DEBUG")}.ToBool()
+func HTTPController(router *ExtRouter, logger ILogger, responseMapper IResponseMapper) *HTTPControllerCtx {
+	isDebug, _ := StringParser{os.Getenv("DEBUG")}.ToBool()
 
 	logger.Debug("OK", nil)
 

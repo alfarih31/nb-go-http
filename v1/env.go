@@ -1,9 +1,7 @@
-package env
+package nbgohttp
 
 import (
 	"encoding/json"
-	"github.com/alfarih31/nb-go-http/app_error"
-	"github.com/alfarih31/nb-go-http/data"
 	"github.com/joho/godotenv"
 	"os"
 )
@@ -29,7 +27,7 @@ func (c Env) GetInt(k string, def int) (int, error) {
 		return def, nil
 	}
 
-	i, e := data.StringParser{cfg}.ToInt()
+	i, e := StringParser{cfg}.ToInt()
 
 	if e != nil {
 		return def, e
@@ -53,7 +51,7 @@ func (c Env) GetBool(k string, def bool) (bool, error) {
 		return def, nil
 	}
 
-	b, e := data.StringParser{cfg}.ToBool()
+	b, e := StringParser{cfg}.ToBool()
 	if e != nil {
 		return def, e
 	}
@@ -77,7 +75,7 @@ func (c Env) GetStringArr(k string, def []string) ([]string, error) {
 		return def, nil
 	}
 
-	return data.StringParser{cfg}.ToStringArr()
+	return StringParser{cfg}.ToStringArr()
 }
 
 func (c Env) GetIntArr(k string, def []int) ([]int, error) {
@@ -86,7 +84,7 @@ func (c Env) GetIntArr(k string, def []int) ([]int, error) {
 		return def, nil
 	}
 
-	is, e := data.StringParser{cfg}.ToIntArr()
+	is, e := StringParser{cfg}.ToIntArr()
 
 	if e != nil {
 		return def, e
@@ -97,7 +95,7 @@ func (c Env) GetIntArr(k string, def []int) ([]int, error) {
 
 func (c Env) Dump() (string, error) {
 	if !c.useEnvs {
-		return "", apperror.Err{Message: "Cannot dump env, you are using system-wide env!"}
+		return "", Err{Message: "Cannot dump env, you are using system-wide env!"}
 	}
 
 	j, e := json.Marshal(c.envs)

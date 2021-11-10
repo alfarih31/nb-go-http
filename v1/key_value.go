@@ -1,8 +1,7 @@
-package data
+package nbgohttp
 
 import (
 	"encoding/json"
-	"github.com/alfarih31/nb-go-http/app_error"
 	"reflect"
 )
 
@@ -91,7 +90,7 @@ func StructToMapString(strct interface{}) map[string]interface{} {
 	j, e := json.Marshal(strct)
 
 	if e != nil {
-		apperror.ThrowError(&apperror.Err{
+		ThrowError(&Err{
 			Err: e,
 		})
 	}
@@ -101,7 +100,7 @@ func StructToMapString(strct interface{}) map[string]interface{} {
 	e = json.Unmarshal(j, &t)
 
 	if e != nil {
-		apperror.ThrowError(&apperror.Err{
+		ThrowError(&Err{
 			Err: e,
 		})
 	}

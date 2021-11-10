@@ -1,22 +1,20 @@
-package http
+package nbgohttp
 
 import (
 	"fmt"
-	"github.com/alfarih31/nb-go-http/data"
-	"github.com/alfarih31/nb-go-http/logger"
 	"time"
 )
 
 type CommonController struct {
-	Logger    logger.ILogger
+	Logger    ILogger
 	StartTime time.Time
 }
 
-func (cc CommonController) APIStatus(m data.KeyValue) HTTPHandler {
+func (cc CommonController) APIStatus(m KeyValue) HTTPHandler {
 	return func(c *HandlerCtx) *Response {
 		u := time.Since(cc.StartTime).String()
 
-		resData := data.KeyValue{
+		resData := KeyValue{
 			"uptime": u,
 		}
 

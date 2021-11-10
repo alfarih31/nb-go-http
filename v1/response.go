@@ -1,8 +1,4 @@
-package http
-
-import (
-	"github.com/alfarih31/nb-go-http/data"
-)
+package nbgohttp
 
 type Response struct {
 	Code   int
@@ -16,8 +12,8 @@ func (r Response) ComposeTo(res *Response) {
 	}
 
 	if res.Body != nil {
-		body := data.KeyValueFromStruct(res.Body)
-		body.Assign(data.KeyValueFromStruct(r.Body), false)
+		body := KeyValueFromStruct(res.Body)
+		body.Assign(KeyValueFromStruct(r.Body), false)
 
 		res.Body = body
 	} else {
@@ -54,8 +50,8 @@ func (r *Response) ComposeBody(body interface{}) {
 		return
 	}
 
-	kvBody := data.KeyValueFromStruct(body)
-	kvBody.Assign(data.KeyValueFromStruct(r.Body), false)
+	kvBody := KeyValueFromStruct(body)
+	kvBody.Assign(KeyValueFromStruct(r.Body), false)
 
 	r.Body = kvBody
 }
