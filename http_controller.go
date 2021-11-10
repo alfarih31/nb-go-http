@@ -51,7 +51,7 @@ func (h HTTPControllerCtx) GetSpec(spec string) HandlerSpec {
 func (h HTTPControllerCtx) ToExtHandler(handler HTTPHandler) ExtHandler {
 	return func(ec *ExtHandlerCtx) {
 		c := WrapExtHandlerCtx(ec)
-		Func(Run{
+		FlowFunc(Func{
 			Try: func() {
 				res := handler(c)
 

@@ -1,12 +1,12 @@
 package nb_go
 
-type FuncRun struct {
+type Func struct {
 	Try     func()
 	Catch   func(e interface{})
 	Finally func()
 }
 
-func Func(ru FuncRun) {
+func FlowFunc(ru Func) {
 	if ru.Finally != nil {
 		defer ru.Finally()
 	}

@@ -147,7 +147,7 @@ func main() {
 	baseHost, _ := env.GetString("SERVER_HOST", ":")
 	basePort, _ := env.GetInt("SERVER_PORT", 8080)
 
-	nb_go.Func(nb_go.FuncRun{
+	nb_go.FlowFunc(nb_go.Func{
 		Try: func() {
 			responseMapper := nb_go.ResponseMapper(nb_go.ResponseMapperCfg{
 				Logger:            nb_go.Logger("ResponseMapper"),
