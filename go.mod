@@ -1,4 +1,4 @@
-module github.com/alfarih31/nb-go-http/v1
+module github.com/alfarih31/nb-go-http
 
 go 1.17
 
