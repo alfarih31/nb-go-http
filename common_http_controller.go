@@ -39,11 +39,11 @@ func (cc CommonController) RequestLogger() HTTPHandler {
 		cc.Logger.Debug(
 			fmt.Sprintf(
 				"%s - %s %s %d - %s",
-				c.Ext.ClientIP(), c.Request.Method, c.Request.URL.Path, c.Ext.Writer.Status(), time.Since(start)), map[string]interface{}{
-				"clientIp":     c.Ext.ClientIP(),
+				c.ext.ClientIP(), c.Request.Method, c.Request.URL.Path, c.ext.Writer.Status(), time.Since(start)), map[string]interface{}{
+				"clientIp":     c.ext.ClientIP(),
 				"method":       c.Request.Method,
 				"path":         c.Request.URL.Path,
-				"status":       c.Ext.Writer.Status(),
+				"status":       c.ext.Writer.Status(),
 				"responseTime": time.Since(start).String(),
 			})
 		return nil

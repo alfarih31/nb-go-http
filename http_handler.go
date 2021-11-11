@@ -7,7 +7,7 @@ import (
 )
 
 type HandlerCtx struct {
-	Ext     *ExtHandlerCtx
+	ext     *ExtHandlerCtx
 	Request *http.Request
 	Params  *gin.Params
 }
@@ -17,7 +17,7 @@ type HTTPHandler func(context *HandlerCtx) *Response
 func (c HandlerCtx) response(status int, body interface{}, headers map[string]string) (int, error) {
 	if headers != nil {
 		for key, head := range headers {
-			c.Ext.Writer.Header().Set(key, head)
+			c.ext.Writer.Header().Set(key, head)
 		}
 	}
 
@@ -26,7 +26,7 @@ func (c HandlerCtx) response(status int, body interface{}, headers map[string]st
 		status = 500
 	}
 
-	c.Ext.Writer.WriteHeader(status)
+	c.ext.Writer.WriteHeader(status)
 
 	j, e := json.Marshal(body)
 
@@ -34,16 +34,20 @@ func (c HandlerCtx) response(status int, body interface{}, headers map[string]st
 		return 0, e
 	}
 
-	return c.Ext.Writer.WriteString(string(j))
+	return c.ext.Writer.WriteString(string(j))
 }
 
 func (c HandlerCtx) Next() {
-	c.Ext.Next()
+	c.ext.Next()
+}
+
+func (c HandlerCtx) Query(q string) string {
+	return c.ext.Query(q)
 }
 
 func WrapExtHandlerCtx(ec *ExtHandlerCtx) *HandlerCtx {
 	return &HandlerCtx{
-		Ext:     ec,
+		ext:     ec,
 		Request: ec.Request,
 		Params:  &ec.Params,
 	}

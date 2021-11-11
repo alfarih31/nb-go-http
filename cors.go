@@ -55,7 +55,7 @@ func CORS(config *CORSCfg) HTTPHandler {
 	}
 
 	return func(c *HandlerCtx) *Response {
-		cors.PutCORS(c.Ext.Writer)
+		cors.PutCORS(c.ext.Writer)
 
 		if c.Request.Method == http.MethodOptions {
 			return &Response{}
