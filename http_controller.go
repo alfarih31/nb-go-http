@@ -3,6 +3,7 @@ package nbgohttp
 import (
 	"context"
 	"fmt"
+	"github.com/alfarih31/nb-go-http/parser"
 	"math"
 	"net/http"
 	"os"
@@ -193,7 +194,7 @@ func (h *HTTPControllerCtx) WithContext(ctx context.Context) *HTTPControllerCtx 
 }
 
 func HTTPController(arg HTTPControllerArg) *HTTPControllerCtx {
-	isDebug, _ := StringParser{os.Getenv("DEBUG")}.ToBool()
+	isDebug, _ := parser.String(os.Getenv("DEBUG")).ToBool()
 
 	arg.Logger.Debug("OK", nil)
 

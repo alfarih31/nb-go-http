@@ -1,6 +1,7 @@
 package nbgohttp
 
 import (
+	"github.com/alfarih31/nb-go-http/parser"
 	"net/http"
 )
 
@@ -41,7 +42,7 @@ func (cr TCORS) PutCORS(w http.ResponseWriter) {
 	}
 
 	if cr.Config.AllowCredentials == true {
-		w.Header().Set(CORSAllowCredentials, BoolParser{cr.Config.AllowCredentials}.ToString())
+		w.Header().Set(CORSAllowCredentials, parser.Bool(cr.Config.AllowCredentials).ToString())
 	}
 
 	if cr.Config.ExposeHeaders != "" {

@@ -3,6 +3,7 @@ package nbgohttp
 import (
 	"context"
 	"fmt"
+	"github.com/alfarih31/nb-go-http/parser"
 	"github.com/gin-gonic/gin"
 	"os"
 	"time"
@@ -113,7 +114,7 @@ func (c *CoreCtx) WithContext(ctx context.Context) *CoreCtx {
 }
 
 func Core(config *CoreCfg) *CoreCtx {
-	isDebug, _ := StringParser{os.Getenv("DEBUG")}.ToBool()
+	isDebug, _ := parser.String(os.Getenv("DEBUG")).ToBool()
 
 	validateCoreConfig(config)
 

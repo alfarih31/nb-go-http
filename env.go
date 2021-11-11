@@ -2,6 +2,7 @@ package nbgohttp
 
 import (
 	"encoding/json"
+	"github.com/alfarih31/nb-go-http/parser"
 	"github.com/joho/godotenv"
 	"os"
 )
@@ -27,7 +28,7 @@ func (c Env) GetInt(k string, def int) (int, error) {
 		return def, nil
 	}
 
-	i, e := StringParser{cfg}.ToInt()
+	i, e := parser.String(cfg).ToInt()
 
 	if e != nil {
 		return def, e
@@ -51,7 +52,7 @@ func (c Env) GetBool(k string, def bool) (bool, error) {
 		return def, nil
 	}
 
-	b, e := StringParser{cfg}.ToBool()
+	b, e := parser.String(cfg).ToBool()
 	if e != nil {
 		return def, e
 	}
@@ -75,7 +76,7 @@ func (c Env) GetStringArr(k string, def []string) ([]string, error) {
 		return def, nil
 	}
 
-	return StringParser{cfg}.ToStringArr()
+	return parser.String(cfg).ToStringArr()
 }
 
 func (c Env) GetIntArr(k string, def []int) ([]int, error) {
@@ -84,7 +85,7 @@ func (c Env) GetIntArr(k string, def []int) ([]int, error) {
 		return def, nil
 	}
 
-	is, e := StringParser{cfg}.ToIntArr()
+	is, e := parser.String(cfg).ToIntArr()
 
 	if e != nil {
 		return def, e
