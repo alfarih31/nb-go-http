@@ -17,7 +17,7 @@ type DefaultResponse struct {
 	InternalError Response
 }
 
-type responseMapperCtx struct {
+type ResponseMapperCtx struct {
 	Responses         map[string]Response
 	Logger            logger.ILogger
 	successCode       string
@@ -25,13 +25,13 @@ type responseMapperCtx struct {
 	defaults          DefaultResponse
 }
 
-func (m *responseMapperCtx) Load(rs map[string]Response) {
+func (m *ResponseMapperCtx) Load(rs map[string]Response) {
 	for key, val := range rs {
 		m.Responses[key] = val
 	}
 }
 
-func (m *responseMapperCtx) GetSuccess() Response {
+func (m *ResponseMapperCtx) GetSuccess() Response {
 	if m.successCode == "" {
 		m.Logger.Debug("successCode is ''", nil)
 		return m.defaults.Success
@@ -46,7 +46,7 @@ func (m *responseMapperCtx) GetSuccess() Response {
 	return r
 }
 
-func (m *responseMapperCtx) GetInternalError() Response {
+func (m *ResponseMapperCtx) GetInternalError() Response {
 	if m.internalErrorCode == "" {
 		m.Logger.Debug("internalErrorCode is ''", nil)
 		return m.defaults.InternalError
@@ -61,7 +61,7 @@ func (m *responseMapperCtx) GetInternalError() Response {
 	return r
 }
 
-func (m *responseMapperCtx) Get(code string, options *struct{ Success bool }) Response {
+func (m *ResponseMapperCtx) Get(code string, options *struct{ Success bool }) Response {
 	r, exist := m.Responses[code]
 
 	if !exist {
@@ -75,14 +75,14 @@ func (m *responseMapperCtx) Get(code string, options *struct{ Success bool }) Re
 	return r
 }
 
-func ResponseMapper(cfg ResponseMapperCfg) *responseMapperCtx {
+func ResponseMapper(cfg ResponseMapperCfg) *ResponseMapperCtx {
 	if cfg.Logger == nil {
 		ThrowError(&Err{Message: "ResponseMapper Logger cannot be nil!"})
 	}
 
 	cfg.Logger.Debug("OK", nil)
 
-	m := &responseMapperCtx{
+	m := &ResponseMapperCtx{
 		Responses:         map[string]Response{},
 		Logger:            cfg.Logger,
 		successCode:       cfg.SuccessCode,

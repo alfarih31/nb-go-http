@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-type coreCtx struct {
+type CoreCtx struct {
 	startTime time.Time
 	Provider  *HTTPProviderCtx
 	Logger    logger.ILogger
@@ -19,7 +19,7 @@ type coreCtx struct {
 	Meta  keyvalue.KeyValue
 	Setup func()
 
-	*httpControllerCtx
+	*HTTPControllerCtx
 }
 
 type StartArg struct {
@@ -32,14 +32,14 @@ type StartArg struct {
 type CoreCfg struct {
 	Context        context.Context
 	Meta           *keyvalue.KeyValue
-	ResponseMapper *responseMapperCtx
+	ResponseMapper *ResponseMapperCtx
 }
 
-func (co *coreCtx) Boot() {
+func (co *CoreCtx) Boot() {
 	co.Setup()
 }
 
-func (co *coreCtx) Start(cfg StartArg) {
+func (co *CoreCtx) Start(cfg StartArg) {
 	common := CommonController{
 		Logger:    co.Logger.NewChild("CommonController"),
 		StartTime: time.Now(),
@@ -106,7 +106,7 @@ func validateCoreConfig(config *CoreCfg) {
 	}
 }
 
-func New(config *CoreCfg) *coreCtx {
+func New(config *CoreCfg) *CoreCtx {
 	isDebug, _ := parser.String(os.Getenv("DEBUG")).ToBool()
 
 	validateCoreConfig(config)
@@ -124,12 +124,12 @@ func New(config *CoreCfg) *coreCtx {
 		ResponseMapper: config.ResponseMapper,
 	})
 
-	c := &coreCtx{
+	c := &CoreCtx{
 		Provider:          p,
 		Meta:              *config.Meta,
 		Logger:            l,
 		Setup:             notImplemented("Setup"),
-		httpControllerCtx: rc,
+		HTTPControllerCtx: rc,
 	}
 
 	return c
