@@ -1,9 +1,11 @@
-package nbgohttp
+package noob
 
 import (
-	"context"
 	"fmt"
+	"github.com/alfarih31/nb-go-http/keyvalue"
+	"github.com/alfarih31/nb-go-http/logger"
 	"github.com/alfarih31/nb-go-http/parser"
+	"github.com/alfarih31/nb-go-http/tcf"
 	"math"
 	"net/http"
 	"os"
@@ -12,19 +14,16 @@ import (
 
 const abortIndex int8 = math.MaxInt8 / 2
 
-type HTTPControllerCtx struct {
-	Context        context.Context
+type httpControllerCtx struct {
 	router         *ExtRouter
-	Logger         ILogger
-	ResponseMapper *ResponseMapperCtx
+	Logger         logger.ILogger
+	ResponseMapper *responseMapperCtx
 	Debug          bool
 }
 
-type HTTPControllerArg struct {
-	Context        context.Context
-	Router         *ExtRouter
-	Logger         ILogger
-	ResponseMapper *ResponseMapperCtx
+type ControllerArg struct {
+	Logger         logger.ILogger
+	ResponseMapper *responseMapperCtx
 }
 
 type HandlerSpec struct {
@@ -32,7 +31,7 @@ type HandlerSpec struct {
 	path   string
 }
 
-func (h HTTPControllerCtx) GetSpec(spec string) HandlerSpec {
+func (h *httpControllerCtx) GetSpec(spec string) HandlerSpec {
 	if spec == "" {
 		ThrowError(&Err{Message: "Handler Spec cannot be empty!"})
 	}
@@ -58,10 +57,10 @@ func (h HTTPControllerCtx) GetSpec(spec string) HandlerSpec {
 	return HandlerSpec{method, path}
 }
 
-func (h HTTPControllerCtx) ToExtHandler(handler HTTPHandler) ExtHandler {
+func (h *httpControllerCtx) ToExtHandler(handler HTTPHandler) ExtHandler {
 	return func(ec *ExtHandlerCtx) {
 		c := WrapExtHandlerCtx(ec)
-		FlowFunc(Func{
+		tcf.TCFunc(tcf.Func{
 			Try: func() {
 				res := handler(c)
 
@@ -76,7 +75,7 @@ func (h HTTPControllerCtx) ToExtHandler(handler HTTPHandler) ExtHandler {
 	}
 }
 
-func (h HTTPControllerCtx) ToExtHandlers(handlers []HTTPHandler) []ExtHandler {
+func (h *httpControllerCtx) ToExtHandlers(handlers []HTTPHandler) []ExtHandler {
 	extHandlers := make([]ExtHandler, len(handlers), len(handlers))
 
 	for i, handler := range handlers {
@@ -86,7 +85,7 @@ func (h HTTPControllerCtx) ToExtHandlers(handlers []HTTPHandler) []ExtHandler {
 	return extHandlers
 }
 
-func (h *HTTPControllerCtx) BranchRouter(path string) *ExtRouter {
+func (h *httpControllerCtx) BranchRouter(path string) *ExtRouter {
 	h.Logger.Debug(fmt.Sprintf("Branching Controller Router with Path : %s", path), map[string]interface{}{
 		"branchFullPath": fmt.Sprintf("%s%s", h.router.fullPath, path),
 	})
@@ -94,9 +93,9 @@ func (h *HTTPControllerCtx) BranchRouter(path string) *ExtRouter {
 	return h.router.Branch(path, fmt.Sprintf("%s%s", h.router.fullPath, path))
 }
 
-func (h *HTTPControllerCtx) Handle(spec string, handlers ...HTTPHandler) {
-	if &h.router == nil {
-		ThrowError(&Err{Message: "Cannot Set Spec, router is nil"})
+func (h *httpControllerCtx) Handle(spec string, handlers ...HTTPHandler) {
+	if h.router == nil {
+		ThrowError(&Err{Message: "Cannot Set Spec, SetRouter first!"})
 	}
 
 	handlerSpec := h.GetSpec(spec)
@@ -123,7 +122,7 @@ func (h *HTTPControllerCtx) Handle(spec string, handlers ...HTTPHandler) {
 	}
 }
 
-func (h *HTTPControllerCtx) SendSuccess(c *HandlerCtx, res *Response) {
+func (h *httpControllerCtx) SendSuccess(c *HandlerCtx, res *Response) {
 	r := h.ResponseMapper.GetSuccess()
 
 	r.ComposeTo(res)
@@ -135,7 +134,7 @@ func (h *HTTPControllerCtx) SendSuccess(c *HandlerCtx, res *Response) {
 	}
 }
 
-func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}) {
+func (h *httpControllerCtx) SendError(c *HandlerCtx, e interface{}) {
 	r := h.ResponseMapper.GetInternalError()
 
 	switch er := e.(type) {
@@ -147,7 +146,7 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}) {
 		}
 
 		if r.Code == http.StatusInternalServerError {
-			r.ComposeBody(KeyValue{"errors": er})
+			r.ComposeBody(keyvalue.KeyValue{"errors": er})
 		}
 	case Err:
 		r = h.ResponseMapper.Get(er.Code, nil)
@@ -157,16 +156,16 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}) {
 		}
 
 		if r.Code == http.StatusInternalServerError {
-			r.ComposeBody(KeyValue{"errors": er})
+			r.ComposeBody(keyvalue.KeyValue{"errors": er})
 		}
 	case Response:
 		r = er
 	case *Response:
 		r = *er
 	case error:
-		r.ComposeBody(KeyValue{"errors": er})
+		r.ComposeBody(keyvalue.KeyValue{"errors": er})
 	case string:
-		r.ComposeBody(KeyValue{"errors": er})
+		r.ComposeBody(keyvalue.KeyValue{"errors": er})
 	}
 
 	_, rEr := c.response(r.Code, r.Body, r.Header)
@@ -176,38 +175,25 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}) {
 	}
 }
 
-func (h *HTTPControllerCtx) SetRouter(r *ExtRouter) {
+func (h *httpControllerCtx) SetRouter(r *ExtRouter) *httpControllerCtx {
 	if r == nil {
 		ThrowError(&Err{Message: "setRouter r cannot be nil!"})
 	}
 
 	h.router = r
+
+	return h
 }
 
-func (h *HTTPControllerCtx) WithContext(ctx context.Context) *HTTPControllerCtx {
-	return HTTPController(HTTPControllerArg{
-		Context:        ctx,
-		Router:         h.router,
-		Logger:         h.Logger,
-		ResponseMapper: h.ResponseMapper,
-	})
-}
-
-func HTTPController(arg HTTPControllerArg) *HTTPControllerCtx {
+func NewController(arg ControllerArg) *httpControllerCtx {
 	isDebug, _ := parser.String(os.Getenv("DEBUG")).ToBool()
 
 	arg.Logger.Debug("OK", nil)
 
-	h := &HTTPControllerCtx{
-		Context:        arg.Context,
-		router:         arg.Router,
+	h := &httpControllerCtx{
 		Logger:         arg.Logger,
 		ResponseMapper: arg.ResponseMapper,
 		Debug:          isDebug,
-	}
-
-	if arg.Context != nil && arg.ResponseMapper != nil {
-		arg.ResponseMapper = arg.ResponseMapper.WithContext(arg.Context)
 	}
 
 	return h

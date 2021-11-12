@@ -1,4 +1,6 @@
-package nbgohttp
+package noob
+
+import "github.com/alfarih31/nb-go-http/keyvalue"
 
 type Response struct {
 	Code   int
@@ -43,13 +45,13 @@ func (r *Response) ComposeBody(body interface{}) {
 		return
 	}
 
-	sourceBody, err := KeyValueFromStruct(body)
+	sourceBody, err := keyvalue.KeyValueFromStruct(body)
 	if err != nil {
 		r.Body = body
 		return
 	}
 
-	targetBody, err := KeyValueFromStruct(r.Body)
+	targetBody, err := keyvalue.KeyValueFromStruct(r.Body)
 	if err != nil {
 		return
 	}

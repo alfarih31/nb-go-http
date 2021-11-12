@@ -1,9 +1,12 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"github.com/alfarih31/nb-go-http"
+	"github.com/alfarih31/nb-go-http/env"
+	"github.com/alfarih31/nb-go-http/keyvalue"
+	"github.com/alfarih31/nb-go-http/logger"
+	"github.com/alfarih31/nb-go-http/tcf"
 	"net/http"
 	"runtime/debug"
 )
@@ -19,7 +22,7 @@ const (
 	ErrorBadGateway   = "502"
 )
 
-var StandardResponses = map[string]nbgohttp.Response{
+var StandardResponses = map[string]noob.Response{
 	Empty: {
 		Code: http.StatusOK,
 		Body: ResponseBody{
@@ -151,49 +154,44 @@ func (b ResponseBody) String() string {
 }
 
 func main() {
-	ctx := context.Background()
-	env, _ := nbgohttp.LoadEnv(".env")
+	env, _ := env.LoadEnv(".env")
 
-	rl := nbgohttp.Logger("RootLogger")
+	rl := logger.Logger("RootLogger")
 
 	basePath, _ := env.GetString("SERVER_PATH", "/v1")
 	baseHost, _ := env.GetString("SERVER_HOST", ":")
 	basePort, _ := env.GetInt("SERVER_PORT", 8080)
 
-	nbgohttp.FlowFunc(nbgohttp.Func{
+	tcf.TCFunc(tcf.Func{
 		Try: func() {
-			responseMapper := nbgohttp.ResponseMapper(nbgohttp.ResponseMapperCfg{
-				Logger:            nbgohttp.Logger("ResponseMapper"),
+			responseMapper := noob.ResponseMapper(noob.ResponseMapperCfg{
+				Logger:            logger.Logger("ResponseMapper"),
 				SuccessCode:       "OK",
 				InternalErrorCode: "500",
 			})
 			responseMapper.Load(StandardResponses)
 
-			app := nbgohttp.Core(&nbgohttp.CoreCfg{
+			app := noob.New(&noob.CoreCfg{
 				ResponseMapper: responseMapper,
-				Meta: &nbgohttp.KeyValue{
+				Meta: &keyvalue.KeyValue{
 					"app_name":        "test",
 					"app_version":     "v0.1.0",
 					"app_description": "Description",
 				},
-			}).WithContext(ctx)
-
-			app.Provider.Engine.NoRoute()
+			})
 
 			app.Setup = func() {
-				g1 := nbgohttp.HTTPController(nbgohttp.HTTPControllerArg{
-					Router:         app.RootController.BranchRouter("/sample"),
+				g1 := noob.NewController(noob.ControllerArg{
 					Logger:         app.Logger.NewChild("G1-Controller"),
 					ResponseMapper: responseMapper,
-				})
-				g2 := nbgohttp.HTTPController(nbgohttp.HTTPControllerArg{
-					Router:         app.RootController.BranchRouter("/deep"),
+				}).SetRouter(app.BranchRouter("/sample"))
+				g2 := noob.NewController(noob.ControllerArg{
 					Logger:         app.Logger.NewChild("G2-Controller"),
 					ResponseMapper: responseMapper,
-				})
+				}).SetRouter(g1.BranchRouter("/deep"))
 
-				g1.Handle("GET /first-inner", func(c *nbgohttp.HandlerCtx) *nbgohttp.Response {
-					return &nbgohttp.Response{
+				g1.Handle("GET /first-inner", func(c *noob.HandlerCtx) *noob.Response {
+					return &noob.Response{
 						Body: ResponseBody{
 							Status: ResponseStatus{
 								MessageClient: "G1 FIRST",
@@ -202,18 +200,18 @@ func main() {
 					}
 				})
 
-				g1.Handle("GET /error", func(c *nbgohttp.HandlerCtx) *nbgohttp.Response {
-					nbgohttp.HTTPError.BadGateway.Throw(nil)
+				g1.Handle("GET /error", func(c *noob.HandlerCtx) *noob.Response {
+					noob.HTTPError.BadGateway.Throw(nil)
 					return nil
 				})
 
-				g1.Handle("GET /second-inner", func(c *nbgohttp.HandlerCtx) *nbgohttp.Response {
+				g1.Handle("GET /second-inner", func(c *noob.HandlerCtx) *noob.Response {
 					res, _ := StandardResponses[Success]
 					return &res
 				})
 
-				g2.Handle("GET /first-inner", func(context *nbgohttp.HandlerCtx) *nbgohttp.Response {
-					return &nbgohttp.Response{
+				g2.Handle("GET /first-inner", func(context *noob.HandlerCtx) *noob.Response {
+					return &noob.Response{
 						Body: ResponseBody{
 							Status: ResponseStatus{
 								MessageClient: "G2 FIRST",
@@ -228,21 +226,21 @@ func main() {
 				app.Logger.Debug("Init Controllers OK...", nil)
 			}
 
-			app.Start(nbgohttp.StartArg{
+			app.Start(noob.StartArg{
 				Host: baseHost,
 				Path: basePath,
 				Port: basePort,
-				CORS: &nbgohttp.CORSCfg{
+				CORS: &noob.CORSCfg{
 					Enable: true,
 				},
 			})
 		},
 		Catch: func(e interface{}) {
-			ee, ok := e.(nbgohttp.Err)
+			ee, ok := e.(noob.Err)
 
 			debug.PrintStack()
 			if ok {
-				rl.Error(ee, map[string]interface{}{"error": ee.Errors(), "stack": nbgohttp.StackTrace()})
+				rl.Error(ee, map[string]interface{}{"error": ee.Errors(), "stack": noob.StackTrace()})
 			} else {
 				rl.Error(ee, nil)
 			}

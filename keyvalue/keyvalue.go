@@ -1,4 +1,4 @@
-package nbgohttp
+package keyvalue
 
 import (
 	"encoding/json"
@@ -101,9 +101,7 @@ func StructToMap(strct interface{}) (map[string]interface{}, error) {
 	j, e := json.Marshal(strct)
 
 	if e != nil {
-		ThrowError(&Err{
-			Err: e,
-		})
+		return nil, e
 	}
 
 	var t map[string]interface{}

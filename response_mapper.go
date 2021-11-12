@@ -1,14 +1,13 @@
-package nbgohttp
+package noob
 
 import (
-	"context"
 	"fmt"
+	"github.com/alfarih31/nb-go-http/logger"
 	"net/http"
 )
 
 type ResponseMapperCfg struct {
-	Context           context.Context
-	Logger            ILogger
+	Logger            logger.ILogger
 	SuccessCode       string
 	InternalErrorCode string
 }
@@ -18,22 +17,21 @@ type DefaultResponse struct {
 	InternalError Response
 }
 
-type ResponseMapperCtx struct {
-	Context           context.Context
+type responseMapperCtx struct {
 	Responses         map[string]Response
-	Logger            ILogger
+	Logger            logger.ILogger
 	successCode       string
 	internalErrorCode string
 	defaults          DefaultResponse
 }
 
-func (m *ResponseMapperCtx) Load(rs map[string]Response) {
+func (m *responseMapperCtx) Load(rs map[string]Response) {
 	for key, val := range rs {
 		m.Responses[key] = val
 	}
 }
 
-func (m *ResponseMapperCtx) GetSuccess() Response {
+func (m *responseMapperCtx) GetSuccess() Response {
 	if m.successCode == "" {
 		m.Logger.Debug("successCode is ''", nil)
 		return m.defaults.Success
@@ -48,7 +46,7 @@ func (m *ResponseMapperCtx) GetSuccess() Response {
 	return r
 }
 
-func (m *ResponseMapperCtx) GetInternalError() Response {
+func (m *responseMapperCtx) GetInternalError() Response {
 	if m.internalErrorCode == "" {
 		m.Logger.Debug("internalErrorCode is ''", nil)
 		return m.defaults.InternalError
@@ -63,7 +61,7 @@ func (m *ResponseMapperCtx) GetInternalError() Response {
 	return r
 }
 
-func (m *ResponseMapperCtx) Get(code string, options *struct{ Success bool }) Response {
+func (m *responseMapperCtx) Get(code string, options *struct{ Success bool }) Response {
 	r, exist := m.Responses[code]
 
 	if !exist {
@@ -77,26 +75,14 @@ func (m *ResponseMapperCtx) Get(code string, options *struct{ Success bool }) Re
 	return r
 }
 
-func (m *ResponseMapperCtx) WithContext(ctx context.Context) *ResponseMapperCtx {
-	rm := ResponseMapper(ResponseMapperCfg{
-		Context:           ctx,
-		Logger:            m.Logger,
-		SuccessCode:       m.successCode,
-		InternalErrorCode: m.internalErrorCode,
-	})
-	rm.Responses = m.Responses
-	return m
-}
-
-func ResponseMapper(cfg ResponseMapperCfg) *ResponseMapperCtx {
+func ResponseMapper(cfg ResponseMapperCfg) *responseMapperCtx {
 	if cfg.Logger == nil {
 		ThrowError(&Err{Message: "ResponseMapper Logger cannot be nil!"})
 	}
 
 	cfg.Logger.Debug("OK", nil)
 
-	m := &ResponseMapperCtx{
-		Context:           cfg.Context,
+	m := &responseMapperCtx{
 		Responses:         map[string]Response{},
 		Logger:            cfg.Logger,
 		successCode:       cfg.SuccessCode,

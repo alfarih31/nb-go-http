@@ -1,24 +1,25 @@
-package nbgohttp
+package noob
 
 import (
 	"context"
 	"fmt"
+	"github.com/alfarih31/nb-go-http/keyvalue"
+	"github.com/alfarih31/nb-go-http/logger"
 	"github.com/alfarih31/nb-go-http/parser"
 	"github.com/gin-gonic/gin"
 	"os"
 	"time"
 )
 
-type CoreCtx struct {
-	Context   context.Context
+type coreCtx struct {
 	startTime time.Time
 	Provider  *HTTPProviderCtx
-	Logger    ILogger
+	Logger    logger.ILogger
 
-	RootController *HTTPControllerCtx
-
-	Meta  KeyValue
+	Meta  keyvalue.KeyValue
 	Setup func()
+
+	*httpControllerCtx
 }
 
 type StartArg struct {
@@ -30,33 +31,33 @@ type StartArg struct {
 
 type CoreCfg struct {
 	Context        context.Context
-	Meta           *KeyValue
-	ResponseMapper *ResponseMapperCtx
+	Meta           *keyvalue.KeyValue
+	ResponseMapper *responseMapperCtx
 }
 
-func (co *CoreCtx) Boot() {
+func (co *coreCtx) Boot() {
 	co.Setup()
 }
 
-func (co *CoreCtx) Start(cfg StartArg) {
+func (co *coreCtx) Start(cfg StartArg) {
 	common := CommonController{
 		Logger:    co.Logger.NewChild("CommonController"),
 		StartTime: time.Now(),
 	}
 
-	co.RootController.SetRouter(co.Provider.Router(cfg.Path))
+	co.SetRouter(co.Provider.Router(cfg.Path))
 
-	co.Provider.Engine.NoRoute(co.RootController.ToExtHandlers([]HTTPHandler{common.RequestLogger(), common.HandleNotFound()})...)
+	co.Provider.Engine.NoRoute(co.ToExtHandlers([]HTTPHandler{common.RequestLogger(), common.HandleNotFound()})...)
 
-	co.RootController.Handle("USE", common.RequestLogger())
+	co.Handle("USE", common.RequestLogger())
 
 	if cfg.CORS != nil {
 		if cfg.CORS.Enable {
-			co.RootController.Handle("USE", CORS(cfg.CORS))
+			co.Handle("USE", CORS(cfg.CORS))
 		}
 	}
 
-	co.RootController.Handle("GET /", common.APIStatus(co.Meta))
+	co.Handle("GET /", common.APIStatus(co.Meta))
 
 	co.Boot()
 
@@ -105,20 +106,12 @@ func validateCoreConfig(config *CoreCfg) {
 	}
 }
 
-func (c *CoreCtx) WithContext(ctx context.Context) *CoreCtx {
-	return Core(&CoreCfg{
-		ResponseMapper: c.RootController.ResponseMapper,
-		Context:        ctx,
-		Meta:           &c.Meta,
-	})
-}
-
-func Core(config *CoreCfg) *CoreCtx {
+func New(config *CoreCfg) *coreCtx {
 	isDebug, _ := parser.String(os.Getenv("DEBUG")).ToBool()
 
 	validateCoreConfig(config)
 
-	l := Logger("Core")
+	l := logger.Logger("Core")
 
 	if !isDebug {
 		gin.SetMode(gin.ReleaseMode)
@@ -126,23 +119,17 @@ func Core(config *CoreCfg) *CoreCtx {
 
 	p := ExtHTTP()
 
-	rc := HTTPController(HTTPControllerArg{
+	rc := NewController(ControllerArg{
 		Logger:         l.NewChild("RootController"),
 		ResponseMapper: config.ResponseMapper,
 	})
 
-	c := &CoreCtx{
-		Context:        config.Context,
-		Provider:       p,
-		startTime:      time.Now(),
-		Meta:           *config.Meta,
-		Logger:         l,
-		Setup:          notImplemented("Setup"),
-		RootController: rc,
-	}
-
-	if config.Context != nil {
-		c.RootController = c.RootController.WithContext(config.Context)
+	c := &coreCtx{
+		Provider:          p,
+		Meta:              *config.Meta,
+		Logger:            l,
+		Setup:             notImplemented("Setup"),
+		httpControllerCtx: rc,
 	}
 
 	return c

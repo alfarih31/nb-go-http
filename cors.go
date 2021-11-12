@@ -1,4 +1,4 @@
-package nbgohttp
+package noob
 
 import (
 	"github.com/alfarih31/nb-go-http/parser"

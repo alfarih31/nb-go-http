@@ -1,4 +1,4 @@
-package nbgohttp
+package tcf
 
 type Func struct {
 	Try     func()
@@ -6,7 +6,7 @@ type Func struct {
 	Finally func()
 }
 
-func FlowFunc(ru Func) {
+func TCFunc(ru Func) {
 	if ru.Finally != nil {
 		defer ru.Finally()
 	}
