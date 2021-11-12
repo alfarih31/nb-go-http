@@ -1,6 +1,8 @@
 package noob
 
-import "github.com/alfarih31/nb-go-http/keyvalue"
+import (
+	"github.com/alfarih31/nb-go-http/keyvalue"
+)
 
 type Response struct {
 	Code   int
@@ -45,13 +47,17 @@ func (r *Response) ComposeBody(body interface{}) {
 		return
 	}
 
-	sourceBody, err := keyvalue.KeyValueFromStruct(body)
+	if r.Body == nil {
+		return
+	}
+
+	sourceBody, err := keyvalue.FromStruct(body)
 	if err != nil {
 		r.Body = body
 		return
 	}
 
-	targetBody, err := keyvalue.KeyValueFromStruct(r.Body)
+	targetBody, err := keyvalue.FromStruct(r.Body)
 	if err != nil {
 		return
 	}

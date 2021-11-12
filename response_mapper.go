@@ -2,6 +2,7 @@ package noob
 
 import (
 	"fmt"
+	"github.com/alfarih31/nb-go-http/keyvalue"
 	"github.com/alfarih31/nb-go-http/logger"
 	"net/http"
 )
@@ -90,9 +91,11 @@ func ResponseMapper(cfg ResponseMapperCfg) *ResponseMapperCtx {
 		defaults: DefaultResponse{
 			Success: Response{
 				Code: http.StatusOK,
+				Body: keyvalue.KeyValue{},
 			},
 			InternalError: Response{
 				Code: http.StatusInternalServerError,
+				Body: keyvalue.KeyValue{},
 			},
 		},
 	}

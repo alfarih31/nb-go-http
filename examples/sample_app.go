@@ -22,8 +22,17 @@ const (
 	ErrorBadGateway   = "502"
 )
 
-var StandardResponses = map[string]noob.Response{
-	Empty: {
+type Response = noob.Response
+
+type Standard struct {
+	Success         Response
+	ErrorInternal   Response
+	ErrorBadRequest Response
+	ErrorNotFound   Response
+}
+
+var StandardResponses = Standard{
+	Success: Response{
 		Code: http.StatusOK,
 		Body: ResponseBody{
 			Status: ResponseStatus{
@@ -33,17 +42,7 @@ var StandardResponses = map[string]noob.Response{
 			},
 		},
 	},
-	Success: {
-		Code: http.StatusOK,
-		Body: ResponseBody{
-			Status: ResponseStatus{
-				Code:          0,
-				MessageClient: "Success",
-				MessageServer: "Success",
-			},
-		},
-	},
-	ErrorBadRequest: {
+	ErrorBadRequest: Response{
 		Code: http.StatusBadRequest,
 		Body: ResponseBody{
 			Status: ResponseStatus{
@@ -53,27 +52,7 @@ var StandardResponses = map[string]noob.Response{
 			},
 		},
 	},
-	ErrorUnauthorized: {
-		Code: http.StatusUnauthorized,
-		Body: ResponseBody{
-			Status: ResponseStatus{
-				Code:          1,
-				MessageClient: "Unauthorized",
-				MessageServer: "Unauthorized",
-			},
-		},
-	},
-	ErrorForbidden: {
-		Code: http.StatusForbidden,
-		Body: ResponseBody{
-			Status: ResponseStatus{
-				Code:          1,
-				MessageClient: "Forbidden",
-				MessageServer: "Forbidden",
-			},
-		},
-	},
-	ErrorNotFound: {
+	ErrorNotFound: Response{
 		Code: http.StatusNotFound,
 		Body: ResponseBody{
 			Status: ResponseStatus{
@@ -83,23 +62,13 @@ var StandardResponses = map[string]noob.Response{
 			},
 		},
 	},
-	ErrorInternal: {
+	ErrorInternal: Response{
 		Code: http.StatusInternalServerError,
 		Body: ResponseBody{
 			Status: ResponseStatus{
 				Code:          1,
 				MessageClient: "Internal Error",
 				MessageServer: "Internal Error",
-			},
-		},
-	},
-	ErrorBadGateway: {
-		Code: http.StatusBadGateway,
-		Body: ResponseBody{
-			Status: ResponseStatus{
-				Code:          1,
-				MessageClient: "Bad Gateway",
-				MessageServer: "Bad Gateway",
 			},
 		},
 	},
@@ -169,7 +138,12 @@ func main() {
 				SuccessCode:       "OK",
 				InternalErrorCode: "500",
 			})
-			responseMapper.Load(StandardResponses)
+
+			responseMapper.Load(map[string]noob.Response{
+				Success:         StandardResponses.Success,
+				ErrorInternal:   StandardResponses.ErrorInternal,
+				ErrorBadGateway: StandardResponses.ErrorBadRequest,
+			})
 
 			app := noob.New(&noob.CoreCfg{
 				ResponseMapper: responseMapper,
@@ -201,12 +175,18 @@ func main() {
 				})
 
 				g1.Handle("GET /error", func(c *noob.HandlerCtx) *noob.Response {
-					noob.HTTPError.BadGateway.Throw(nil)
+					panic("error")
 					return nil
 				})
 
 				g1.Handle("GET /second-inner", func(c *noob.HandlerCtx) *noob.Response {
-					res, _ := StandardResponses[Success]
+					res := StandardResponses.Success
+					res.Body = ResponseBody{
+						Status: ResponseStatus{
+							MessageClient: "G1 SECOND",
+						},
+						Data: "G1 SECOND DATA",
+					}
 					return &res
 				})
 

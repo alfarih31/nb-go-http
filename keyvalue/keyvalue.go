@@ -3,7 +3,6 @@ package keyvalue
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"reflect"
 )
 
@@ -15,8 +14,8 @@ func (k KeyValue) AssignTo(target KeyValue, replaceExist bool) {
 
 		// Recursive assignTo
 		if reflect.ValueOf(val).Kind() == reflect.Map && reflect.ValueOf(targetValue).Kind() == reflect.Map {
-			sourceKvVal, _ := KeyValueFromStruct(val)
-			targetKvVal, _ := KeyValueFromStruct(targetValue)
+			sourceKvVal, _ := FromStruct(val)
+			targetKvVal, _ := FromStruct(targetValue)
 
 			sourceKvVal.AssignTo(targetKvVal, replaceExist)
 
@@ -46,8 +45,8 @@ func (k KeyValue) Assign(source KeyValue, replaceExist bool) {
 
 		// Recursive assign
 		if reflect.ValueOf(val).Kind() == reflect.Map && reflect.ValueOf(existingValue).Kind() == reflect.Map {
-			sourceKvVal, _ := KeyValueFromStruct(val)
-			existingKvVal, _ := KeyValueFromStruct(existingValue)
+			sourceKvVal, _ := FromStruct(val)
+			existingKvVal, _ := FromStruct(existingValue)
 
 			existingKvVal.Assign(sourceKvVal, replaceExist)
 
@@ -88,16 +87,26 @@ func (k KeyValue) Values() []interface{} {
 	return values
 }
 
-func StructToMap(strct interface{}) (map[string]interface{}, error) {
-	tStruct := reflect.TypeOf(strct).Kind()
-	if tStruct == reflect.Map {
-		return strct.(map[string]interface{}), nil
+func IsAbleToConvert(p interface{}) bool {
+	t := reflect.TypeOf(p)
+	name := t.Name()
+	kind := t.Kind()
+
+	if name == "KeyValue" {
+		return true
 	}
 
-	if tStruct != reflect.Struct {
-		return nil, errors.New(fmt.Sprintf("val not a struct type: %s", tStruct))
+	switch kind {
+	case reflect.Map:
+		fallthrough
+	case reflect.Struct:
+		return true
 	}
 
+	return true
+}
+
+func structToMap(strct interface{}) (map[string]interface{}, error) {
 	j, e := json.Marshal(strct)
 
 	if e != nil {
@@ -115,8 +124,12 @@ func StructToMap(strct interface{}) (map[string]interface{}, error) {
 	return t, nil
 }
 
-func KeyValueFromStruct(strct interface{}) (KeyValue, error) {
-	mapString, err := StructToMap(strct)
+func FromStruct(strct interface{}) (KeyValue, error) {
+	if !IsAbleToConvert(strct) {
+		return nil, errors.New("cannot convert")
+	}
+
+	mapString, err := structToMap(strct)
 
 	if err != nil {
 		return nil, err

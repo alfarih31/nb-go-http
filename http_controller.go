@@ -166,6 +166,8 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}) {
 		r.ComposeBody(keyvalue.KeyValue{"errors": er})
 	case string:
 		r.ComposeBody(keyvalue.KeyValue{"errors": er})
+	default:
+		r.ComposeBody(keyvalue.KeyValue{"errors": er})
 	}
 
 	_, rEr := c.response(r.Code, r.Body, r.Header)
