@@ -33,13 +33,13 @@ func getFields(opts []interface{}) (logrus.Fields, []interface{}) {
 				continue
 			}
 
-			tValues := reflect.TypeOf(values)
+			tValues := reflect.ValueOf(values)
 			switch tValues.Kind() {
 			case reflect.Map:
-				for k, v := range values.(map[string]interface{}) {
-					fields[k] = v
+				for _, k := range tValues.MapKeys() {
+					fields[k.String()] = tValues.MapIndex(k).Interface()
 				}
-			case reflect.Interface:
+			default:
 				interfaces = append(interfaces, values)
 			}
 		}
@@ -89,7 +89,6 @@ func (l logger) SetLevel(level string) {
 
 	case "warn":
 		l.Logger.SetLevel(logrus.WarnLevel)
-
 	default:
 		l.Logger.SetLevel(logrus.InfoLevel)
 	}
