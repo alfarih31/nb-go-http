@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/alfarih31/nb-go-http/keyvalue"
 	"github.com/alfarih31/nb-go-http/logger"
+	"golang.org/x/time/rate"
 	"time"
 )
 
@@ -11,6 +12,14 @@ type CommonController struct {
 	Logger    logger.Logger
 	StartTime time.Time
 }
+
+type ThrottlingCfg struct {
+	MaxEventPerSec int
+	MaxBurstSize   int
+}
+
+const DefaultMaxBurstSize = 20
+const DefaultMaxEventPerSec = 1000
 
 func (cc CommonController) APIStatus(m keyvalue.KeyValue) HTTPHandler {
 	return func(c *HandlerCtx) *Response {
@@ -59,9 +68,26 @@ func (cc CommonController) HandleNotFound() HTTPHandler {
 	}
 }
 
-func (cc CommonController) HandleNoMethod() HTTPHandler {
+func (cc CommonController) Throttling(maxEventsPerSec int, maxBurstSize int) HTTPHandler {
+	if maxEventsPerSec == 0 {
+		maxEventsPerSec = DefaultMaxEventPerSec
+	}
+
+	if maxBurstSize == 0 {
+		maxBurstSize = DefaultMaxBurstSize
+	}
+
+	limiter := rate.NewLimiter(rate.Limit(maxEventsPerSec), maxBurstSize)
+
 	return func(context *HandlerCtx) *Response {
-		HTTPError.NoMethod.Throw("")
+		if limiter.Allow() {
+			context.Next()
+
+			return nil
+		}
+
+		HTTPError.TooManyRequest.Throw("")
+
 		return nil
 	}
 }

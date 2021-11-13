@@ -142,7 +142,6 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}) {
 	case *apperr.AppErr:
 		r = h.ResponseMapper.Get(er.Code, nil)
 
-		fmt.Println(r)
 		if !h.Debug {
 			er.Stack = nil
 		}

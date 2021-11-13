@@ -3,13 +3,14 @@ package noob
 import "github.com/alfarih31/nb-go-http/app_err"
 
 type httpError struct {
-	BadRequest   apperr.AppErr
-	Unauthorized apperr.AppErr
-	Forbidden    apperr.AppErr
-	Internal     apperr.AppErr
-	BadGateway   apperr.AppErr
-	NotFound     apperr.AppErr
-	NoMethod     apperr.AppErr
+	BadRequest     apperr.AppErr
+	Unauthorized   apperr.AppErr
+	Forbidden      apperr.AppErr
+	Internal       apperr.AppErr
+	BadGateway     apperr.AppErr
+	NotFound       apperr.AppErr
+	NoMethod       apperr.AppErr
+	TooManyRequest apperr.AppErr
 }
 
 var HTTPError = httpError{
@@ -41,4 +42,6 @@ var HTTPError = httpError{
 		"No Method",
 		"405",
 	),
+	TooManyRequest: apperr.New(
+		"Too Many Request", "429"),
 }

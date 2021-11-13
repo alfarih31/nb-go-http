@@ -25,10 +25,11 @@ type CoreCtx struct {
 }
 
 type StartArg struct {
-	Host string
-	Port int
-	Path string
-	CORS *cors.Cfg
+	Host       string
+	Port       int
+	Path       string
+	CORS       *cors.Cfg
+	Throttling *ThrottlingCfg
 }
 
 type CoreCfg struct {
@@ -50,6 +51,10 @@ func (co *CoreCtx) Start(cfg StartArg) {
 	co.SetRouter(co.Provider.Router(cfg.Path))
 
 	co.Provider.Engine.NoRoute(co.ToExtHandlers([]HTTPHandler{common.RequestLogger(), common.HandleNotFound()})...)
+
+	if cfg.Throttling != nil {
+		co.Handle("USE", common.Throttling(cfg.Throttling.MaxEventPerSec, cfg.Throttling.MaxEventPerSec))
+	}
 
 	co.Handle("USE", common.RequestLogger())
 

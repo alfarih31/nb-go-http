@@ -14,23 +14,21 @@ import (
 )
 
 const (
-	Empty             = ""
-	Success           = "OK"
-	ErrorBadRequest   = "400"
-	ErrorUnauthorized = "401"
-	ErrorForbidden    = "403"
-	ErrorNotFound     = "404"
-	ErrorInternal     = "500"
-	ErrorBadGateway   = "502"
+	Success            = "OK"
+	ErrorBadRequest    = "400"
+	ErrorNotFound      = "404"
+	ErrorInternal      = "500"
+	ErrorToManyRequest = "429"
 )
 
 type Response = noob.Response
 
 type Standard struct {
-	Success         Response
-	ErrorInternal   Response
-	ErrorBadRequest Response
-	ErrorNotFound   Response
+	Success            Response
+	ErrorInternal      Response
+	ErrorBadRequest    Response
+	ErrorNotFound      Response
+	ErrorToManyRequest Response
 }
 
 var StandardResponses = Standard{
@@ -71,6 +69,16 @@ var StandardResponses = Standard{
 				Code:          1,
 				MessageClient: "Internal Error",
 				MessageServer: "Internal Error",
+			},
+		},
+	},
+	ErrorToManyRequest: Response{
+		Code: http.StatusTooManyRequests,
+		Body: ResponseBody{
+			Status: ResponseStatus{
+				Code:          1,
+				MessageClient: "Too Many Request",
+				MessageServer: "Too Many Request",
 			},
 		},
 	},
@@ -142,10 +150,11 @@ func main() {
 			})
 
 			responseMapper.Load(map[string]noob.Response{
-				Success:         StandardResponses.Success,
-				ErrorInternal:   StandardResponses.ErrorInternal,
-				ErrorBadGateway: StandardResponses.ErrorBadRequest,
-				ErrorNotFound:   StandardResponses.ErrorNotFound,
+				Success:            StandardResponses.Success,
+				ErrorInternal:      StandardResponses.ErrorInternal,
+				ErrorBadRequest:    StandardResponses.ErrorBadRequest,
+				ErrorNotFound:      StandardResponses.ErrorNotFound,
+				ErrorToManyRequest: StandardResponses.ErrorToManyRequest,
 			})
 
 			app := noob.New(&noob.CoreCfg{
@@ -215,6 +224,10 @@ func main() {
 				Port: basePort,
 				CORS: &cors.Cfg{
 					Enable: true,
+				},
+				Throttling: &noob.ThrottlingCfg{
+					MaxEventPerSec: 2,
+					MaxBurstSize:   1,
 				},
 			})
 		},

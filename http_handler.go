@@ -34,7 +34,15 @@ func (c HandlerCtx) response(status int, body interface{}, headers map[string]st
 		return 0, e
 	}
 
-	return c.ext.Writer.WriteString(string(j))
+	i, e := c.ext.Writer.WriteString(string(j))
+
+	if e != nil {
+		return i, e
+	}
+
+	c.ext.Abort()
+
+	return 0, nil
 }
 
 func (c HandlerCtx) Next() {
