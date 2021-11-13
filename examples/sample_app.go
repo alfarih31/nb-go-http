@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"github.com/alfarih31/nb-go-http"
+	"github.com/alfarih31/nb-go-http/cors"
 	"github.com/alfarih31/nb-go-http/env"
 	"github.com/alfarih31/nb-go-http/keyvalue"
 	"github.com/alfarih31/nb-go-http/logger"
@@ -125,7 +126,7 @@ func (b ResponseBody) String() string {
 func main() {
 	env, _ := env.LoadEnv(".env")
 
-	rl := logger.Logger("RootLogger")
+	rl := logger.New("RootLogger")
 
 	basePath, _ := env.GetString("SERVER_PATH", "/v1")
 	baseHost, _ := env.GetString("SERVER_HOST", ":")
@@ -134,7 +135,7 @@ func main() {
 	tcf.TCFunc(tcf.Func{
 		Try: func() {
 			responseMapper := noob.ResponseMapper(noob.ResponseMapperCfg{
-				Logger:            logger.Logger("ResponseMapper"),
+				Logger:            logger.New("ResponseMapper"),
 				SuccessCode:       "OK",
 				InternalErrorCode: "500",
 			})
@@ -143,6 +144,7 @@ func main() {
 				Success:         StandardResponses.Success,
 				ErrorInternal:   StandardResponses.ErrorInternal,
 				ErrorBadGateway: StandardResponses.ErrorBadRequest,
+				ErrorNotFound:   StandardResponses.ErrorNotFound,
 			})
 
 			app := noob.New(&noob.CoreCfg{
@@ -210,7 +212,7 @@ func main() {
 				Host: baseHost,
 				Path: basePath,
 				Port: basePort,
-				CORS: &noob.CORSCfg{
+				CORS: &cors.Cfg{
 					Enable: true,
 				},
 			})

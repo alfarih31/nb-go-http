@@ -8,7 +8,7 @@ import (
 )
 
 type CommonController struct {
-	Logger    logger.ILogger
+	Logger    logger.Logger
 	StartTime time.Time
 }
 

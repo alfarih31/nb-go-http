@@ -3,6 +3,7 @@ package noob
 import (
 	"context"
 	"fmt"
+	"github.com/alfarih31/nb-go-http/cors"
 	"github.com/alfarih31/nb-go-http/keyvalue"
 	"github.com/alfarih31/nb-go-http/logger"
 	"github.com/alfarih31/nb-go-http/parser"
@@ -14,7 +15,7 @@ import (
 type CoreCtx struct {
 	startTime time.Time
 	Provider  *HTTPProviderCtx
-	Logger    logger.ILogger
+	Logger    logger.Logger
 
 	Meta  keyvalue.KeyValue
 	Setup func()
@@ -26,7 +27,7 @@ type StartArg struct {
 	Host string
 	Port int
 	Path string
-	CORS *CORSCfg
+	CORS *cors.Cfg
 }
 
 type CoreCfg struct {
@@ -53,7 +54,7 @@ func (co *CoreCtx) Start(cfg StartArg) {
 
 	if cfg.CORS != nil {
 		if cfg.CORS.Enable {
-			co.Handle("USE", CORS(cfg.CORS))
+			co.Handle("USE", CORS(*cfg.CORS))
 		}
 	}
 
@@ -111,7 +112,7 @@ func New(config *CoreCfg) *CoreCtx {
 
 	validateCoreConfig(config)
 
-	l := logger.Logger("Core")
+	l := logger.New("Core")
 
 	if !isDebug {
 		gin.SetMode(gin.ReleaseMode)

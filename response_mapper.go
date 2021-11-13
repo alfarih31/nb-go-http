@@ -8,7 +8,7 @@ import (
 )
 
 type ResponseMapperCfg struct {
-	Logger            logger.ILogger
+	Logger            logger.Logger
 	SuccessCode       string
 	InternalErrorCode string
 }
@@ -20,7 +20,7 @@ type DefaultResponse struct {
 
 type ResponseMapperCtx struct {
 	Responses         map[string]Response
-	Logger            logger.ILogger
+	Logger            logger.Logger
 	successCode       string
 	internalErrorCode string
 	defaults          DefaultResponse

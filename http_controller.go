@@ -16,13 +16,13 @@ const abortIndex int8 = math.MaxInt8 / 2
 
 type HTTPControllerCtx struct {
 	router         *ExtRouter
-	Logger         logger.ILogger
+	Logger         logger.Logger
 	ResponseMapper *ResponseMapperCtx
 	Debug          bool
 }
 
 type ControllerArg struct {
-	Logger         logger.ILogger
+	Logger         logger.Logger
 	ResponseMapper *ResponseMapperCtx
 }
 
@@ -141,6 +141,7 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}) {
 	case *Err:
 		r = h.ResponseMapper.Get(er.Code, nil)
 
+		fmt.Println(r)
 		if !h.Debug {
 			er.Stack = nil
 		}

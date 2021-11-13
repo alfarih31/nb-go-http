@@ -8,12 +8,12 @@ import (
 	"os"
 )
 
-type Env struct {
+type env struct {
 	envs    map[string]string
 	useEnvs bool
 }
 
-type IEnv interface {
+type Env interface {
 	GetInt(k string, def int) (int, error)
 	GetString(k string, def string) (string, error)
 	GetBool(k string, def bool) (bool, error)
@@ -22,7 +22,7 @@ type IEnv interface {
 	Dump() (string, error)
 }
 
-func (c Env) GetInt(k string, def int) (int, error) {
+func (c env) GetInt(k string, def int) (int, error) {
 	cfg, exist := c.get(k)
 
 	if !exist {
@@ -38,7 +38,7 @@ func (c Env) GetInt(k string, def int) (int, error) {
 	return i, e
 }
 
-func (c Env) GetString(k string, def string) (string, error) {
+func (c env) GetString(k string, def string) (string, error) {
 	cfg, exist := c.get(k)
 	if !exist {
 		return def, nil
@@ -47,7 +47,7 @@ func (c Env) GetString(k string, def string) (string, error) {
 	return cfg, nil
 }
 
-func (c Env) GetBool(k string, def bool) (bool, error) {
+func (c env) GetBool(k string, def bool) (bool, error) {
 	cfg, exist := c.get(k)
 	if !exist {
 		return def, nil
@@ -61,7 +61,7 @@ func (c Env) GetBool(k string, def bool) (bool, error) {
 	return b, e
 }
 
-func (c Env) get(k string) (string, bool) {
+func (c env) get(k string) (string, bool) {
 	if c.useEnvs {
 		cfg, exist := c.envs[k]
 		return cfg, exist
@@ -71,7 +71,7 @@ func (c Env) get(k string) (string, bool) {
 	return cfg, cfg != ""
 }
 
-func (c Env) GetStringArr(k string, def []string) ([]string, error) {
+func (c env) GetStringArr(k string, def []string) ([]string, error) {
 	cfg, exist := c.get(k)
 	if !exist {
 		return def, nil
@@ -80,7 +80,7 @@ func (c Env) GetStringArr(k string, def []string) ([]string, error) {
 	return parser.String(cfg).ToStringArr()
 }
 
-func (c Env) GetIntArr(k string, def []int) ([]int, error) {
+func (c env) GetIntArr(k string, def []int) ([]int, error) {
 	cfg, exist := c.get(k)
 	if !exist {
 		return def, nil
@@ -95,7 +95,7 @@ func (c Env) GetIntArr(k string, def []int) ([]int, error) {
 	return is, e
 }
 
-func (c Env) Dump() (string, error) {
+func (c env) Dump() (string, error) {
 	if !c.useEnvs {
 		return "", noob.Err{Message: "Cannot dump env, you are using system-wide env!"}
 	}
@@ -114,7 +114,7 @@ func LoadEnv(envPath string) (Env, error) {
 		}
 	}
 
-	return Env{
+	return env{
 		envs:    envs,
 		useEnvs: err == nil,
 	}, err
