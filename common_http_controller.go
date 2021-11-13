@@ -54,14 +54,14 @@ func (cc CommonController) RequestLogger() HTTPHandler {
 
 func (cc CommonController) HandleNotFound() HTTPHandler {
 	return func(context *HandlerCtx) *Response {
-		HTTPError.NotFound.Throw(nil)
+		HTTPError.NotFound.Throw("")
 		return nil
 	}
 }
 
 func (cc CommonController) HandleNoMethod() HTTPHandler {
 	return func(context *HandlerCtx) *Response {
-		HTTPError.NoMethod.Throw(nil)
+		HTTPError.NoMethod.Throw("")
 		return nil
 	}
 }

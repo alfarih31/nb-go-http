@@ -3,6 +3,7 @@ package logger
 import (
 	"github.com/sirupsen/logrus"
 	"os"
+	"reflect"
 )
 
 type LogLevel = logrus.Level
@@ -22,18 +23,23 @@ type Logger interface {
 	SetLevel(level string)
 }
 
-func getFields(opts ...interface{}) (logrus.Fields, []interface{}) {
+func getFields(opts []interface{}) (logrus.Fields, []interface{}) {
 	fields := logrus.Fields{}
 	var interfaces []interface{}
 
 	if opts != nil {
 		for _, values := range opts {
-			switch val := values.(type) {
-			case map[string]interface{}:
-				for k, v := range val {
+			if values == nil {
+				continue
+			}
+
+			tValues := reflect.TypeOf(values)
+			switch tValues.Kind() {
+			case reflect.Map:
+				for k, v := range values.(map[string]interface{}) {
 					fields[k] = v
 				}
-			case interface{}:
+			case reflect.Interface:
 				interfaces = append(interfaces, values)
 			}
 		}

@@ -2,6 +2,7 @@ package noob
 
 import (
 	"fmt"
+	"github.com/alfarih31/nb-go-http/app_err"
 	"github.com/alfarih31/nb-go-http/keyvalue"
 	"github.com/alfarih31/nb-go-http/logger"
 	"net/http"
@@ -78,7 +79,7 @@ func (m *ResponseMapperCtx) Get(code string, options *struct{ Success bool }) Re
 
 func ResponseMapper(cfg ResponseMapperCfg) *ResponseMapperCtx {
 	if cfg.Logger == nil {
-		ThrowError(&Err{Message: "ResponseMapper Logger cannot be nil!"})
+		apperr.Throw(apperr.New("ResponseMapper Logger cannot be nil!"))
 	}
 
 	cfg.Logger.Debug("OK", nil)

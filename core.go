@@ -3,6 +3,7 @@ package noob
 import (
 	"context"
 	"fmt"
+	"github.com/alfarih31/nb-go-http/app_err"
 	"github.com/alfarih31/nb-go-http/cors"
 	"github.com/alfarih31/nb-go-http/keyvalue"
 	"github.com/alfarih31/nb-go-http/logger"
@@ -87,23 +88,21 @@ func (co *CoreCtx) Start(cfg StartArg) {
 
 func notImplemented(fname string) func() {
 	return func() {
-		ThrowError(&Err{
-			Message: fmt.Sprintf("Core.%s Not Implemented", fname),
-		})
+		apperr.Throw(apperr.New(fmt.Sprintf("Core.%s Not Implemented", fname)))
 	}
 }
 
 func validateCoreConfig(config *CoreCfg) {
 	if config == nil {
-		ThrowError(&Err{Message: "Core config cannot be nil"})
+		apperr.Throw(apperr.New("Core config cannot be nil"))
 	}
 
 	if config.Meta == nil {
-		ThrowError(&Err{Message: "Core config.Meta cannot be nil"})
+		apperr.Throw(apperr.New("Core config.Meta cannot be nil"))
 	}
 
 	if config.ResponseMapper == nil {
-		ThrowError(&Err{Message: "Core config.ResponseMapper cannot be nil"})
+		apperr.Throw(apperr.New("Core config.ResponseMapper cannot be nil"))
 	}
 }
 

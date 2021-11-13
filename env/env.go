@@ -2,7 +2,7 @@ package env
 
 import (
 	"encoding/json"
-	"github.com/alfarih31/nb-go-http"
+	"errors"
 	"github.com/alfarih31/nb-go-http/parser"
 	"github.com/joho/godotenv"
 	"os"
@@ -97,7 +97,7 @@ func (c env) GetIntArr(k string, def []int) ([]int, error) {
 
 func (c env) Dump() (string, error) {
 	if !c.useEnvs {
-		return "", noob.Err{Message: "Cannot dump env, you are using system-wide env!"}
+		return "", errors.New("cannot dump env, you are using system-wide env")
 	}
 
 	j, e := json.Marshal(c.envs)

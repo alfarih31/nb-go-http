@@ -2,6 +2,7 @@ package noob
 
 import (
 	"fmt"
+	"github.com/alfarih31/nb-go-http/app_err"
 	"github.com/alfarih31/nb-go-http/keyvalue"
 	"github.com/alfarih31/nb-go-http/logger"
 	"github.com/alfarih31/nb-go-http/parser"
@@ -33,7 +34,7 @@ type HandlerSpec struct {
 
 func (h *HTTPControllerCtx) GetSpec(spec string) HandlerSpec {
 	if spec == "" {
-		ThrowError(&Err{Message: "Handler Spec cannot be empty!"})
+		apperr.Throw(apperr.New("Handler Spec cannot be empty!"))
 	}
 	specArr := make([]string, 2, 2)
 
@@ -95,7 +96,7 @@ func (h *HTTPControllerCtx) BranchRouter(path string) *ExtRouter {
 
 func (h *HTTPControllerCtx) Handle(spec string, handlers ...HTTPHandler) {
 	if h.router == nil {
-		ThrowError(&Err{Message: "Cannot Set Spec, SetRouter first!"})
+		apperr.Throw(apperr.New("Cannot Set Spec, SetRouter first!"))
 	}
 
 	handlerSpec := h.GetSpec(spec)
@@ -118,7 +119,7 @@ func (h *HTTPControllerCtx) Handle(spec string, handlers ...HTTPHandler) {
 	case "USE":
 		h.router.USE(h.ToExtHandlers(handlers)...)
 	default:
-		ThrowError(&Err{Message: fmt.Sprintf("Unknown HTTP Handle Spec: %s", spec)})
+		apperr.Throw(apperr.New(fmt.Sprintf("Unknown HTTP Handle Spec: %s", spec)))
 	}
 }
 
@@ -138,7 +139,7 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}) {
 	r := h.ResponseMapper.GetInternalError()
 
 	switch er := e.(type) {
-	case *Err:
+	case *apperr.AppErr:
 		r = h.ResponseMapper.Get(er.Code, nil)
 
 		fmt.Println(r)
@@ -149,7 +150,7 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}) {
 		if r.Code == http.StatusInternalServerError {
 			r.ComposeBody(keyvalue.KeyValue{"errors": er})
 		}
-	case Err:
+	case apperr.AppErr:
 		r = h.ResponseMapper.Get(er.Code, nil)
 
 		if !h.Debug {
@@ -180,7 +181,7 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}) {
 
 func (h *HTTPControllerCtx) SetRouter(r *ExtRouter) *HTTPControllerCtx {
 	if r == nil {
-		ThrowError(&Err{Message: "setRouter r cannot be nil!"})
+		apperr.Throw(apperr.New("setRouter r cannot be nil!"))
 	}
 
 	h.router = r

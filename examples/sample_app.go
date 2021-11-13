@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"github.com/alfarih31/nb-go-http"
+	"github.com/alfarih31/nb-go-http/app_err"
 	"github.com/alfarih31/nb-go-http/cors"
 	"github.com/alfarih31/nb-go-http/env"
 	"github.com/alfarih31/nb-go-http/keyvalue"
@@ -218,11 +219,11 @@ func main() {
 			})
 		},
 		Catch: func(e interface{}) {
-			ee, ok := e.(noob.Err)
+			ee, ok := e.(apperr.AppErr)
 
 			debug.PrintStack()
 			if ok {
-				rl.Error(ee, map[string]interface{}{"error": ee.Errors(), "stack": noob.StackTrace()})
+				rl.Error(ee, map[string]interface{}{"error": ee.Errors(), "stack": apperr.StackTrace()})
 			} else {
 				rl.Error(ee, nil)
 			}
