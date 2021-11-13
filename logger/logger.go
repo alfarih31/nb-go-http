@@ -15,17 +15,17 @@ type logger struct {
 }
 
 type Logger interface {
-	Info(opts ...interface{})
-	Warn(opts ...interface{})
-	Debug(opts ...interface{})
-	Error(opts ...interface{})
+	Info(m interface{}, opts ...interface{})
+	Warn(m interface{}, opts ...interface{})
+	Debug(m interface{}, opts ...interface{})
+	Error(m interface{}, opts ...interface{})
 	NewChild(cname string) Logger
 	SetLevel(level string)
 }
 
-func getFields(opts []interface{}) (logrus.Fields, []interface{}) {
+func getFields(m interface{}, opts []interface{}) (logrus.Fields, []interface{}) {
 	fields := logrus.Fields{}
-	var interfaces []interface{}
+	interfaces := []interface{}{m}
 
 	if opts != nil {
 		for _, values := range opts {
@@ -48,23 +48,23 @@ func getFields(opts []interface{}) (logrus.Fields, []interface{}) {
 	return fields, interfaces
 }
 
-func (l logger) Warn(opts ...interface{}) {
-	fields, ms := getFields(opts)
+func (l logger) Warn(m interface{}, opts ...interface{}) {
+	fields, ms := getFields(m, opts)
 	l.Entry.WithFields(fields).Warn(ms...)
 }
 
-func (l logger) Info(opts ...interface{}) {
-	fields, ms := getFields(opts)
+func (l logger) Info(m interface{}, opts ...interface{}) {
+	fields, ms := getFields(m, opts)
 	l.Entry.WithFields(fields).Info(ms...)
 }
 
-func (l logger) Debug(opts ...interface{}) {
-	fields, ms := getFields(opts)
+func (l logger) Debug(m interface{}, opts ...interface{}) {
+	fields, ms := getFields(m, opts)
 	l.Entry.WithFields(fields).Debug(ms...)
 }
 
-func (l logger) Error(opts ...interface{}) {
-	fields, ms := getFields(opts)
+func (l logger) Error(m interface{}, opts ...interface{}) {
+	fields, ms := getFields(m, opts)
 	l.Entry.WithFields(fields).Error(ms...)
 }
 
