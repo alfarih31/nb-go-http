@@ -138,7 +138,7 @@ func main() {
 	rl := logger.New("RootLogger")
 
 	basePath, _ := env.GetString("SERVER_PATH", "/v1")
-	baseHost, _ := env.GetString("SERVER_HOST", ":")
+	baseHost, _ := env.GetString("SERVER_HOST", "")
 	basePort, _ := env.GetInt("SERVER_PORT", 8080)
 
 	tcf.TCFunc(tcf.Func{

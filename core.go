@@ -68,12 +68,8 @@ func (co *CoreCtx) Start(cfg StartArg) {
 
 	co.Boot()
 
-	if cfg.Host == "" {
-		cfg.Host = ":"
-	}
-
 	hostInfo := cfg.Host
-	if hostInfo == ":" {
+	if hostInfo == "" {
 		hostInfo = "http://localhost"
 	}
 
