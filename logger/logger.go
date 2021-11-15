@@ -21,6 +21,7 @@ type Logger interface {
 	Error(m interface{}, opts ...interface{})
 	NewChild(cname string) Logger
 	SetLevel(level string)
+	AddHook(hook logrus.Hook)
 }
 
 func getFields(m interface{}, opts []interface{}) (logrus.Fields, []interface{}) {
@@ -92,6 +93,10 @@ func (l logger) SetLevel(level string) {
 	default:
 		l.Logger.SetLevel(logrus.InfoLevel)
 	}
+}
+
+func (l logger) AddHook(hook logrus.Hook) {
+	l.Logger.AddHook(hook)
 }
 
 func New(serviceName string) Logger {
