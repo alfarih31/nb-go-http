@@ -82,7 +82,7 @@ func (co *CoreCtx) Start(cfg StartArg) {
 	co.Logger.Info(fmt.Sprintf("TimeToBoot = %s Running: BaseUrl = '%s' Path = '%s'", time.Since(co.startTime).String(), baseUrlInfo, cfg.Path), map[string]interface{}{
 		"url": fmt.Sprintf("%s%s", baseUrlInfo, cfg.Path),
 	})
-	e := co.Provider.Run(fmt.Sprintf("%s%d", cfg.Host, cfg.Port))
+	e := co.Provider.Run(fmt.Sprintf("%s:%d", cfg.Host, cfg.Port))
 
 	if e != nil {
 		co.Logger.Error("Failed to start, error happened!", map[string]interface{}{"_error": e})
