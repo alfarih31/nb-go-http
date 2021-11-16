@@ -64,9 +64,9 @@ func (co *CoreCtx) Start(cfg StartArg) {
 		}
 	}
 
-	co.Handle("GET /", common.APIStatus(co.Meta))
-
 	co.Boot()
+
+	co.Handle("GET /", common.APIStatus(co.Meta))
 
 	hostInfo := cfg.Host
 	if hostInfo == "" {
