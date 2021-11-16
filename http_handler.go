@@ -7,10 +7,11 @@ import (
 )
 
 type HandlerCtx struct {
-	ext     *ExtHandlerCtx
-	Request *http.Request
-	Params  *gin.Params
-	Errors  []*gin.Error
+	ext      *ExtHandlerCtx
+	Request  *http.Request
+	Response gin.ResponseWriter
+	Params   *gin.Params
+	Errors   []*gin.Error
 }
 
 type HTTPHandler func(context *HandlerCtx) *Response
@@ -48,9 +49,10 @@ func (c HandlerCtx) Query(q string) string {
 
 func WrapExtHandlerCtx(ec *ExtHandlerCtx) *HandlerCtx {
 	return &HandlerCtx{
-		ext:     ec,
-		Request: ec.Request,
-		Params:  &ec.Params,
-		Errors:  ec.Errors,
+		ext:      ec,
+		Request:  ec.Request,
+		Response: ec.Writer,
+		Params:   &ec.Params,
+		Errors:   ec.Errors,
 	}
 }
