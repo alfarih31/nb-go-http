@@ -10,6 +10,7 @@ type HandlerCtx struct {
 	ext     *ExtHandlerCtx
 	Request *http.Request
 	Params  *gin.Params
+	Errors  []*gin.Error
 }
 
 type HTTPHandler func(context *HandlerCtx) *Response
@@ -50,5 +51,6 @@ func WrapExtHandlerCtx(ec *ExtHandlerCtx) *HandlerCtx {
 		ext:     ec,
 		Request: ec.Request,
 		Params:  &ec.Params,
+		Errors:  ec.Errors,
 	}
 }
