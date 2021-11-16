@@ -126,6 +126,7 @@ func New(config *CoreCfg) *CoreCtx {
 	})
 
 	c := &CoreCtx{
+		startTime:         time.Now(),
 		Provider:          p,
 		Meta:              *config.Meta,
 		Logger:            l,
