@@ -164,14 +164,14 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}) {
 	case *Response:
 		r = *er
 	case error:
-		r.ComposeBody(keyvalue.KeyValue{"errors": er})
+		r.ComposeBody(keyvalue.KeyValue{"_errors": er})
 	case string:
-		r.ComposeBody(keyvalue.KeyValue{"errors": er})
+		r.ComposeBody(keyvalue.KeyValue{"_errors": er})
 	default:
-		r.ComposeBody(keyvalue.KeyValue{"errors": er})
+		r.ComposeBody(keyvalue.KeyValue{"_errors": er})
 	}
 
-	_, rEr := c.response(r.Code, r.Body, r.Header)
+	_, rEr := c.responseError(r.Code, r.Body, r.Header)
 
 	if rEr != nil {
 		h.Logger.Debug("", map[string]interface{}{"_error": rEr})

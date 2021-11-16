@@ -5,7 +5,7 @@ import (
 	"github.com/alfarih31/nb-go-http"
 	"github.com/alfarih31/nb-go-http/app_err"
 	"github.com/alfarih31/nb-go-http/cors"
-	"github.com/alfarih31/nb-go-http/env"
+	_env "github.com/alfarih31/nb-go-http/env"
 	"github.com/alfarih31/nb-go-http/keyvalue"
 	"github.com/alfarih31/nb-go-http/logger"
 	"github.com/alfarih31/nb-go-http/tcf"
@@ -133,7 +133,7 @@ func (b ResponseBody) String() string {
 }
 
 func main() {
-	env, _ := env.LoadEnv(".env")
+	env, _ := _env.LoadEnv(".env")
 
 	rl := logger.New("RootLogger")
 
@@ -187,7 +187,7 @@ func main() {
 				})
 
 				g1.Handle("GET /error", func(c *noob.HandlerCtx) *noob.Response {
-					panic("error")
+					panic("THIS ERROR NOT KNOWN")
 					return nil
 				})
 

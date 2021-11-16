@@ -2,6 +2,8 @@ package noob
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/alfarih31/nb-go-http/app_err"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -11,12 +13,12 @@ type HandlerCtx struct {
 	Request  *http.Request
 	Response gin.ResponseWriter
 	Params   *gin.Params
-	Errors   []*gin.Error
+	Errors   *[]*gin.Error
 }
 
 type HTTPHandler func(context *HandlerCtx) *Response
 
-func (c HandlerCtx) response(status int, body interface{}, headers map[string]string) (int, error) {
+func (c *HandlerCtx) response(status int, body interface{}, headers map[string]string) (int, error) {
 	if headers != nil {
 		for key, head := range headers {
 			c.ext.Writer.Header().Set(key, head)
@@ -39,11 +41,35 @@ func (c HandlerCtx) response(status int, body interface{}, headers map[string]st
 	return c.ext.Writer.WriteString(string(j))
 }
 
-func (c HandlerCtx) Next() {
+func (c *HandlerCtx) responseError(status int, e interface{}, headers map[string]string) (int, error) {
+	switch er := e.(type) {
+	case error:
+		_ = c.ext.Error(er)
+	case apperr.AppErr:
+		_ = c.ext.Error(er)
+	case *apperr.AppErr:
+		_ = c.ext.Error(er)
+	default:
+		_ = c.ext.Error(fmt.Errorf("%v", er))
+	}
+
+	c.Errors = (*[]*gin.Error)(&c.ext.Errors)
+
+	i, err := c.response(status, e, headers)
+	if err != nil {
+		return i, err
+	}
+
+	c.ext.Abort()
+
+	return i, nil
+}
+
+func (c *HandlerCtx) Next() {
 	c.ext.Next()
 }
 
-func (c HandlerCtx) Query(q string) string {
+func (c *HandlerCtx) Query(q string) string {
 	return c.ext.Query(q)
 }
 
@@ -53,6 +79,6 @@ func WrapExtHandlerCtx(ec *ExtHandlerCtx) *HandlerCtx {
 		Request:  ec.Request,
 		Response: ec.Writer,
 		Params:   &ec.Params,
-		Errors:   ec.Errors,
+		Errors:   (*[]*gin.Error)(&ec.Errors),
 	}
 }
