@@ -168,8 +168,10 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}, frames *runt
 		parsedErr.Err = fmt.Errorf("%v", er.Body)
 	case error:
 		parsedErr.Err = er
+		r.ComposeBody(keyvalue.KeyValue{"_error": er})
 	case string:
 		parsedErr.Err = errors.New(er)
+		r.ComposeBody(keyvalue.KeyValue{"_error": er})
 	default:
 		r.ComposeBody(keyvalue.KeyValue{"_error": er})
 	}

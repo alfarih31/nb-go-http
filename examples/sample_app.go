@@ -195,7 +195,7 @@ func main() {
 				})
 
 				g1.Handle("GET /error", func(c *noob.HandlerCtx) *noob.Response {
-					noob.HTTPError.BadGateway.Throw("")
+					panic("THIS IS AN ERROR")
 					return nil
 				})
 
