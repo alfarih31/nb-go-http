@@ -11,6 +11,8 @@ import (
 
 type Errors []*apperr.AppErr
 
+const extKeyErrors = "_errors"
+
 type HandlerCtx struct {
 	ext      *ExtHandlerCtx
 	Request  *http.Request
@@ -44,13 +46,7 @@ func (c *HandlerCtx) response(status int, body interface{}, headers map[string]s
 }
 
 func (c *HandlerCtx) StackError(e *apperr.AppErr) {
-	errs, exist := c.ext.Keys["errors"]
-	if !exist {
-		errs = Errors{}
-	}
-
-	errs = append(errs.(Errors), e)
-	c.ext.Keys["errors"] = errs
+	c.ext.Keys["errors"] = append(c.ext.Keys["errors"].(Errors), e)
 }
 
 func (c *HandlerCtx) responseError(status int, e interface{}, headers map[string]string) (int, error) {
@@ -73,11 +69,13 @@ func (c *HandlerCtx) Query(q string) string {
 }
 
 func (c *HandlerCtx) Errors() Errors {
-	return c.ext.Keys["errors"].(Errors)
+	return c.ext.Keys[extKeyErrors].(Errors)
 }
 
 func WrapExtHandlerCtx(ec *ExtHandlerCtx) *HandlerCtx {
-	ec.Keys = map[string]interface{}{}
+	ec.Keys = map[string]interface{}{
+		extKeyErrors: Errors{},
+	}
 	return &HandlerCtx{
 		ext:      ec,
 		Request:  ec.Request,
