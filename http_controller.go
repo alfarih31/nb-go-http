@@ -132,9 +132,7 @@ func (h *HTTPControllerCtx) SendSuccess(c *HandlerCtx, res *Response) {
 	_, rEr := c.response(res.Code, res.Body, res.Header)
 
 	if rEr != nil {
-		if h.Debug {
-			h.Logger.Error("", map[string]interface{}{"_error": rEr})
-		}
+		h.Logger.Error("", map[string]interface{}{"_error": rEr})
 	}
 }
 
@@ -185,9 +183,7 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}) {
 	_, rEr := c.responseError(r.Code, r.Body, r.Header)
 
 	if rEr != nil {
-		if h.Debug {
-			h.Logger.Error("", map[string]interface{}{"_error": rEr})
-		}
+		h.Logger.Error("", map[string]interface{}{"_error": rEr})
 	}
 }
 
