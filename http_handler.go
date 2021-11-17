@@ -46,7 +46,7 @@ func (c *HandlerCtx) response(status int, body interface{}, headers map[string]s
 }
 
 func (c *HandlerCtx) StackError(e *apperr.AppErr) {
-	c.ext.Keys["errors"] = append(c.ext.Keys["errors"].(Errors), e)
+	c.ext.Keys[extKeyErrors] = append(c.ext.Keys[extKeyErrors].(Errors), e)
 }
 
 func (c *HandlerCtx) responseError(status int, e interface{}, headers map[string]string) (int, error) {
