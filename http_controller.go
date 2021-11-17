@@ -11,6 +11,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
 )
 
@@ -70,8 +71,8 @@ func (h *HTTPControllerCtx) ToExtHandler(handler HTTPHandler) ExtHandler {
 					h.SendSuccess(c, res)
 				}
 			},
-			Catch: func(e interface{}) {
-				h.SendError(c, e)
+			Catch: func(e interface{}, frames *runtime.Frames) {
+				h.SendError(c, e, frames)
 			},
 		})
 	}
@@ -136,12 +137,13 @@ func (h *HTTPControllerCtx) SendSuccess(c *HandlerCtx, res *Response) {
 	}
 }
 
-func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}) {
+func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}, frames *runtime.Frames) {
 	r := h.ResponseMapper.GetInternalError()
 
 	// Build Error
 	parsedErr := &apperr.AppErr{
-		Stack: apperr.StackTrace(),
+		Stack:  apperr.StackTrace(),
+		Frames: frames,
 	}
 
 	switch er := e.(type) {

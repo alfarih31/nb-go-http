@@ -10,6 +10,7 @@ import (
 	"github.com/alfarih31/nb-go-http/logger"
 	"github.com/alfarih31/nb-go-http/tcf"
 	"net/http"
+	"runtime"
 	"runtime/debug"
 )
 
@@ -194,7 +195,7 @@ func main() {
 				})
 
 				g1.Handle("GET /error", func(c *noob.HandlerCtx) *noob.Response {
-					panic("THIS ERROR NOT KNOWN")
+					noob.HTTPError.BadGateway.Throw("")
 					return nil
 				})
 
@@ -238,7 +239,7 @@ func main() {
 				},
 			})
 		},
-		Catch: func(e interface{}) {
+		Catch: func(e interface{}, frames *runtime.Frames) {
 			ee, ok := e.(apperr.AppErr)
 
 			debug.PrintStack()

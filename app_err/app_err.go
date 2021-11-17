@@ -7,16 +7,33 @@ import (
 	"github.com/DataDog/gostackparse"
 	"github.com/alfarih31/nb-go-http/keyvalue"
 	"reflect"
+	"runtime"
 	"runtime/debug"
 )
 
 const DefaultErrCode = "_"
 
 type AppErr struct {
-	Err   error                     `json:"err"`
-	Code  string                    `json:"code"`
-	Meta  interface{}               `json:"meta"`
-	Stack []*gostackparse.Goroutine `json:"_stacks,omitempty"`
+	Err    error                     `json:"err"`
+	Code   string                    `json:"code"`
+	Meta   interface{}               `json:"meta"`
+	Stack  []*gostackparse.Goroutine `json:"_stacks,omitempty"`
+	Frames *runtime.Frames           `json:"_frames,omitempty"`
+}
+
+func GetRuntimeFrames(skip int) *runtime.Frames {
+	pc := make([]uintptr, 100, 100)
+
+	if skip == 0 {
+		skip = 2
+	}
+
+	n := runtime.Callers(skip, pc)
+	if n == 0 {
+		return &runtime.Frames{}
+	}
+
+	return runtime.CallersFrames(pc[:n])
 }
 
 func StackTrace() []*gostackparse.Goroutine {
@@ -29,17 +46,12 @@ func (msg *AppErr) Trace() {
 	msg.Stack = StackTrace()
 }
 
-func (msg AppErr) StackTrace() []gostackparse.Frame {
-	if msg.Stack != nil && len(msg.Stack) > 0 {
-		frames := make([]gostackparse.Frame, len(msg.Stack[0].Stack))
-		for i, st := range msg.Stack[0].Stack {
-			frames[i] = *st
-		}
-
-		return frames
+func (msg AppErr) StackTrace() *runtime.Frames {
+	if msg.Frames != nil {
+		return msg.Frames
 	}
 
-	return []gostackparse.Frame{}
+	return GetRuntimeFrames(3)
 }
 
 func (msg *AppErr) Error() string {
