@@ -29,12 +29,17 @@ func (msg *AppErr) Trace() {
 	msg.Stack = StackTrace()
 }
 
-func (msg AppErr) StackTrace() []*gostackparse.Frame {
-	for _, s := range msg.Stack {
-		return s.Stack
+func (msg AppErr) StackTrace() []gostackparse.Frame {
+	if msg.Stack != nil && len(msg.Stack) > 0 {
+		frames := make([]gostackparse.Frame, len(msg.Stack[0].Stack))
+		for i, st := range msg.Stack[0].Stack {
+			frames[i] = *st
+		}
+
+		return frames
 	}
 
-	return []*gostackparse.Frame{}
+	return []gostackparse.Frame{}
 }
 
 func (msg *AppErr) Error() string {
