@@ -16,7 +16,7 @@ type AppErr struct {
 	Err   error                     `json:"err"`
 	Code  string                    `json:"code"`
 	Meta  interface{}               `json:"meta"`
-	Stack []*gostackparse.Goroutine `json:"_stack,omitempty"`
+	Stack []*gostackparse.Goroutine `json:"_stacks,omitempty"`
 }
 
 func StackTrace() []*gostackparse.Goroutine {
@@ -27,6 +27,14 @@ func StackTrace() []*gostackparse.Goroutine {
 
 func (msg *AppErr) Trace() {
 	msg.Stack = StackTrace()
+}
+
+func (msg AppErr) StackTrace() []*gostackparse.Frame {
+	for _, s := range msg.Stack {
+		return s.Stack
+	}
+
+	return []*gostackparse.Frame{}
 }
 
 func (msg *AppErr) Error() string {
