@@ -1,6 +1,7 @@
 package noob
 
 import (
+	"errors"
 	"fmt"
 	"github.com/alfarih31/nb-go-http/app_err"
 	"github.com/alfarih31/nb-go-http/keyvalue"
@@ -128,53 +129,65 @@ func (h *HTTPControllerCtx) SendSuccess(c *HandlerCtx, res *Response) {
 
 	r.ComposeTo(res)
 
-	_, e := c.response(res.Code, res.Body, res.Header)
+	_, rEr := c.response(res.Code, res.Body, res.Header)
 
-	if e != nil {
-		h.Logger.Debug("", map[string]interface{}{"_error": e})
+	if rEr != nil {
+		if h.Debug {
+			h.Logger.Error("", map[string]interface{}{"_error": rEr})
+		}
 	}
 }
 
 func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}) {
 	r := h.ResponseMapper.GetInternalError()
 
+	// Build Error
+	parsedErr := &apperr.AppErr{
+		Stack: apperr.StackTrace(),
+	}
+
 	switch er := e.(type) {
 	case *apperr.AppErr:
 		r = h.ResponseMapper.Get(er.Code, nil)
 
+		// Put to Parsed Error
+		parsedErr.Code = er.Code
+		parsedErr.Stack = er.Stack
+
+		// If not debug then delete stack from er
 		if !h.Debug {
 			er.Stack = nil
 		}
 
-		if r.Code == http.StatusInternalServerError {
-			r.ComposeBody(keyvalue.KeyValue{"errors": er})
-		}
-	case apperr.AppErr:
-		r = h.ResponseMapper.Get(er.Code, nil)
-
-		if !h.Debug {
-			er.Stack = nil
-		}
-
-		if r.Code == http.StatusInternalServerError {
-			r.ComposeBody(keyvalue.KeyValue{"errors": er})
-		}
+		r.ComposeBody(keyvalue.KeyValue{"_error": er})
 	case Response:
 		r = er
+		parsedErr.Err = fmt.Errorf("%v", er.Body)
 	case *Response:
 		r = *er
+		parsedErr.Err = fmt.Errorf("%v", er.Body)
 	case error:
-		r.ComposeBody(keyvalue.KeyValue{"_errors": er})
+		parsedErr.Err = er
 	case string:
-		r.ComposeBody(keyvalue.KeyValue{"_errors": er})
+		parsedErr.Err = errors.New(er)
 	default:
-		r.ComposeBody(keyvalue.KeyValue{"_errors": er})
+		r.ComposeBody(keyvalue.KeyValue{"_error": er})
+	}
+
+	// Stack Error to Context
+	c.StackError(parsedErr)
+
+	// If internal error than log error
+	if r.Code == http.StatusInternalServerError {
+		h.Logger.Error("", map[string]interface{}{"_error": parsedErr.JSON()})
 	}
 
 	_, rEr := c.responseError(r.Code, r.Body, r.Header)
 
 	if rEr != nil {
-		h.Logger.Debug("", map[string]interface{}{"_error": rEr})
+		if h.Debug {
+			h.Logger.Error("", map[string]interface{}{"_error": rEr})
+		}
 	}
 }
 

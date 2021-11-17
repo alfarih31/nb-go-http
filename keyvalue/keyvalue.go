@@ -87,6 +87,11 @@ func (k KeyValue) Values() []interface{} {
 	return values
 }
 
+func (k KeyValue) String() string {
+	j, _ := json.Marshal(k)
+	return string(j)
+}
+
 func IsAbleToConvert(p interface{}) bool {
 	t := reflect.TypeOf(p)
 	name := t.Name()

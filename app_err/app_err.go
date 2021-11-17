@@ -2,20 +2,21 @@ package apperr
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
 	"github.com/DataDog/gostackparse"
+	"github.com/alfarih31/nb-go-http/keyvalue"
+	"reflect"
 	"runtime/debug"
 )
 
-const DefaultErrCode = "AppError"
-const ErrName = "AppError"
+const DefaultErrCode = "_"
 
 type AppErr struct {
-	Name    string                    `json:"name"`
-	Message string                    `json:"message"`
-	Code    string                    `json:"code"`
-	Data    interface{}               `json:"data,omitempty"`
-	AppErr  interface{}               `json:"errors,omitempty"`
-	Stack   []*gostackparse.Goroutine `json:"_stack,omitempty"`
+	Err   error                     `json:"err"`
+	Code  string                    `json:"code"`
+	Meta  interface{}               `json:"meta"`
+	Stack []*gostackparse.Goroutine `json:"_stack,omitempty"`
 }
 
 func StackTrace() []*gostackparse.Goroutine {
@@ -24,47 +25,70 @@ func StackTrace() []*gostackparse.Goroutine {
 	return stacks
 }
 
-func (e AppErr) Error() string {
-	return e.Message
+func (msg *AppErr) Trace() {
+	msg.Stack = StackTrace()
 }
 
-func (e AppErr) Errors() interface{} {
-	return e.AppErr
+func (msg *AppErr) Error() string {
+	return msg.Err.Error()
 }
 
-func (e AppErr) Throw(message string, data ...interface{}) {
-	e.Stack = StackTrace()
+func (msg *AppErr) Errors() interface{} {
+	return msg.Err
+}
+
+func (msg AppErr) Throw(message string, data ...interface{}) {
+	msg.Stack = StackTrace()
 
 	if message != "" {
-		e.Message = message
+		msg.Err = errors.New(message)
 	}
 
-	d := make([]interface{}, len(data))
-	copy(d, data[:])
-	e.Data = d
+	msg.Meta = data
 
-	panic(e)
+	panic(&msg)
 }
 
-func Throw(e AppErr) {
+func Throw(e *AppErr) {
 	e.Stack = StackTrace()
 
 	panic(e)
 }
 
-func New(msgCode ...string) AppErr {
-	message := msgCode[0]
-	code := msgCode[1]
-
-	e := AppErr{
-		Code:    code,
-		Name:    ErrName,
-		Message: message,
-	}
-
-	if e.Code == "" {
-		e.Code = DefaultErrCode
+func New(msg string, meta ...interface{}) *AppErr {
+	e := &AppErr{
+		Err:  errors.New(msg),
+		Code: DefaultErrCode,
+		Meta: meta,
 	}
 
 	return e
+}
+
+func (msg *AppErr) JSON() interface{} {
+	jsonData := keyvalue.KeyValue{}
+	if msg.Meta != nil {
+		value := reflect.ValueOf(msg.Meta)
+		switch value.Kind() {
+		case reflect.Struct:
+			return msg.Meta
+		case reflect.Map:
+			for _, key := range value.MapKeys() {
+				jsonData[key.String()] = value.MapIndex(key).Interface()
+			}
+		default:
+			jsonData["meta"] = msg.Meta
+		}
+	}
+	if _, ok := jsonData["message"]; !ok {
+		jsonData["message"] = msg.Error()
+	}
+
+	jsonData["_stack"] = msg.Stack
+
+	return jsonData
+}
+
+func (msg AppErr) MarshalJSON() ([]byte, error) {
+	return json.Marshal(msg.JSON())
 }

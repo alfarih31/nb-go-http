@@ -144,16 +144,16 @@ func main() {
 	tcf.TCFunc(tcf.Func{
 		Try: func() {
 			responseMapper := noob.ResponseMapper(noob.ResponseMapperCfg{
-				Logger:            logger.New("ResponseMapper"),
-				SuccessCode:       "OK",
-				InternalErrorCode: "500",
+				Logger: logger.New("ResponseMapper"),
+				DefaultCode: &noob.DefaultResponseCode{
+					InternalError: ErrorInternal,
+				},
 			})
 
 			responseMapper.Load(map[string]noob.Response{
 				Success:            StandardResponses.Success,
 				ErrorInternal:      StandardResponses.ErrorInternal,
 				ErrorBadRequest:    StandardResponses.ErrorBadRequest,
-				ErrorNotFound:      StandardResponses.ErrorNotFound,
 				ErrorToManyRequest: StandardResponses.ErrorToManyRequest,
 			})
 
@@ -167,10 +167,17 @@ func main() {
 			})
 
 			app.Setup = func() {
+
+				app.Handle("USE", func(context *noob.HandlerCtx) *noob.Response {
+					context.Next()
+					return nil
+				})
+
 				g1 := noob.NewController(noob.ControllerArg{
 					Logger:         app.Logger.NewChild("G1-Controller"),
 					ResponseMapper: responseMapper,
 				}).SetRouter(app.BranchRouter("/sample"))
+
 				g2 := noob.NewController(noob.ControllerArg{
 					Logger:         app.Logger.NewChild("G2-Controller"),
 					ResponseMapper: responseMapper,

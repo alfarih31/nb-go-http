@@ -5,26 +5,100 @@ import (
 	"github.com/alfarih31/nb-go-http/app_err"
 	"github.com/alfarih31/nb-go-http/keyvalue"
 	"github.com/alfarih31/nb-go-http/logger"
+	"github.com/alfarih31/nb-go-http/parser"
 	"net/http"
+	"reflect"
 )
 
 type ResponseMapperCfg struct {
-	Logger            logger.Logger
-	SuccessCode       string
-	InternalErrorCode string
+	Logger      logger.Logger
+	DefaultCode *DefaultResponseCode
 }
 
-type DefaultResponse struct {
-	Success       Response
-	InternalError Response
+type DefaultResponseCode struct {
+	Success       string
+	InternalError string
+}
+
+type _builtInResponse struct {
+	ResponseSuccess        Response
+	ResponseBadRequest     Response
+	ResponseUnauthorized   Response
+	ResponseForbidden      Response
+	ResponseInternalError  Response
+	ResponseBadGateway     Response
+	ResponseNotFound       Response
+	ResponseNoMethod       Response
+	ResponseTooManyRequest Response
+}
+
+var builtInResponse = _builtInResponse{
+	ResponseSuccess: Response{
+		Code: http.StatusOK,
+		Body: keyvalue.KeyValue{},
+		Header: map[string]string{
+			"Content-Type": "application/json",
+		},
+	},
+	ResponseBadRequest: Response{
+		Code: http.StatusBadRequest,
+		Body: keyvalue.KeyValue{},
+	},
+	ResponseUnauthorized: Response{
+		Code: http.StatusUnauthorized,
+		Body: keyvalue.KeyValue{},
+		Header: map[string]string{
+			"Content-Type": "application/json",
+		},
+	},
+	ResponseForbidden: Response{
+		Code: http.StatusForbidden,
+		Body: keyvalue.KeyValue{},
+		Header: map[string]string{
+			"Content-Type": "application/json",
+		},
+	},
+	ResponseInternalError: Response{
+		Code: http.StatusInternalServerError,
+		Body: keyvalue.KeyValue{},
+		Header: map[string]string{
+			"Content-Type": "application/json",
+		},
+	},
+	ResponseBadGateway: Response{
+		Code: http.StatusBadGateway,
+		Body: keyvalue.KeyValue{},
+		Header: map[string]string{
+			"Content-Type": "application/json",
+		},
+	},
+	ResponseNotFound: Response{
+		Code: http.StatusNotFound,
+		Body: keyvalue.KeyValue{},
+		Header: map[string]string{
+			"Content-Type": "application/json",
+		},
+	},
+	ResponseNoMethod: Response{
+		Code: http.StatusMethodNotAllowed,
+		Body: keyvalue.KeyValue{},
+		Header: map[string]string{
+			"Content-Type": "application/json",
+		},
+	},
+	ResponseTooManyRequest: Response{
+		Code: http.StatusTooManyRequests,
+		Body: keyvalue.KeyValue{},
+		Header: map[string]string{
+			"Content-Type": "application/json",
+		},
+	},
 }
 
 type ResponseMapperCtx struct {
-	Responses         map[string]Response
-	Logger            logger.Logger
-	successCode       string
-	internalErrorCode string
-	defaults          DefaultResponse
+	Responses   map[string]Response
+	Logger      logger.Logger
+	DefaultCode *DefaultResponseCode
 }
 
 func (m *ResponseMapperCtx) Load(rs map[string]Response) {
@@ -34,30 +108,36 @@ func (m *ResponseMapperCtx) Load(rs map[string]Response) {
 }
 
 func (m *ResponseMapperCtx) GetSuccess() Response {
-	if m.successCode == "" {
-		m.Logger.Debug("successCode is ''", nil)
-		return m.defaults.Success
+	if m.DefaultCode == nil {
+		return builtInResponse.ResponseSuccess
 	}
 
-	r, exist := m.Responses[m.successCode]
+	if m.DefaultCode.Success == "" {
+		return builtInResponse.ResponseSuccess
+	}
+
+	r, exist := m.Responses[m.DefaultCode.Success]
 	if !exist {
-		m.Logger.Debug(fmt.Sprintf("Response Code: %s not mapped", m.successCode), nil)
-		return m.defaults.Success
+		m.Logger.Debug(fmt.Sprintf("Response Code: %s not mapped", m.DefaultCode.Success), nil)
+		return builtInResponse.ResponseSuccess
 	}
 
 	return r
 }
 
 func (m *ResponseMapperCtx) GetInternalError() Response {
-	if m.internalErrorCode == "" {
-		m.Logger.Debug("internalErrorCode is ''", nil)
-		return m.defaults.InternalError
+	if m.DefaultCode == nil {
+		return builtInResponse.ResponseInternalError
 	}
 
-	r, exist := m.Responses[m.internalErrorCode]
+	if m.DefaultCode.InternalError == "" {
+		return builtInResponse.ResponseInternalError
+	}
+
+	r, exist := m.Responses[m.DefaultCode.InternalError]
 	if !exist {
-		m.Logger.Debug(fmt.Sprintf("Response Code: %s not mapped", m.internalErrorCode), nil)
-		return m.defaults.InternalError
+		m.Logger.Debug(fmt.Sprintf("Response Code: %s not mapped", m.DefaultCode.InternalError), nil)
+		return builtInResponse.ResponseInternalError
 	}
 
 	return r
@@ -84,21 +164,19 @@ func ResponseMapper(cfg ResponseMapperCfg) *ResponseMapperCtx {
 
 	cfg.Logger.Debug("OK", nil)
 
+	responses := map[string]Response{}
+	builtInResponseVal := reflect.ValueOf(builtInResponse)
+
+	for i := 0; i < builtInResponseVal.NumField(); i++ {
+		r := builtInResponseVal.Field(i).Interface().(Response)
+		code, _ := parser.Int(r.Code).ToString()
+		responses[code] = r
+	}
+
 	m := &ResponseMapperCtx{
-		Responses:         map[string]Response{},
-		Logger:            cfg.Logger,
-		successCode:       cfg.SuccessCode,
-		internalErrorCode: cfg.InternalErrorCode,
-		defaults: DefaultResponse{
-			Success: Response{
-				Code: http.StatusOK,
-				Body: keyvalue.KeyValue{},
-			},
-			InternalError: Response{
-				Code: http.StatusInternalServerError,
-				Body: keyvalue.KeyValue{},
-			},
-		},
+		Responses:   responses,
+		Logger:      cfg.Logger,
+		DefaultCode: cfg.DefaultCode,
 	}
 
 	return m
