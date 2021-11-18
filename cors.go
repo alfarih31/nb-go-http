@@ -9,7 +9,7 @@ func CORS(config _cors.Cfg) HTTPHandler {
 	cors := _cors.New(config)
 
 	return func(c *HandlerCtx) *Response {
-		cors.PutCORS(c.ext.Writer)
+		cors.PutCORS(c.Writer)
 
 		if c.Request.Method == http.MethodOptions {
 			return &Response{}

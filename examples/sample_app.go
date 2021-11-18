@@ -207,6 +207,7 @@ func main() {
 						},
 						Data: "G1 SECOND DATA",
 					}
+
 					return &res
 				})
 
