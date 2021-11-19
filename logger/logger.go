@@ -12,16 +12,18 @@ type logger struct {
 	ServiceName string
 	Logger      *logrus.Logger
 	Entry       *logrus.Entry
+	Level       LogLevel
 }
 
 type Logger interface {
-	Info(m interface{}, opts ...interface{})
-	Warn(m interface{}, opts ...interface{})
-	Debug(m interface{}, opts ...interface{})
-	Error(m interface{}, opts ...interface{})
+	Info(m interface{}, opts ...interface{}) Logger
+	Warn(m interface{}, opts ...interface{}) Logger
+	Debug(m interface{}, opts ...interface{}) Logger
+	Error(m interface{}, opts ...interface{}) Logger
 	NewChild(cname string) Logger
-	SetLevel(level string)
-	AddHook(hook logrus.Hook)
+	SetLevel(level string) Logger
+	AddHook(hook logrus.Hook) Logger
+	GetLevel() LogLevel
 }
 
 func getFields(m interface{}, opts []interface{}) (logrus.Fields, []interface{}) {
@@ -49,27 +51,35 @@ func getFields(m interface{}, opts []interface{}) (logrus.Fields, []interface{})
 	return fields, interfaces
 }
 
-func (l logger) Warn(m interface{}, opts ...interface{}) {
+func (l *logger) Warn(m interface{}, opts ...interface{}) Logger {
 	fields, ms := getFields(m, opts)
 	l.Entry.WithFields(fields).Warn(ms...)
+
+	return l
 }
 
-func (l logger) Info(m interface{}, opts ...interface{}) {
+func (l *logger) Info(m interface{}, opts ...interface{}) Logger {
 	fields, ms := getFields(m, opts)
 	l.Entry.WithFields(fields).Info(ms...)
+
+	return l
 }
 
-func (l logger) Debug(m interface{}, opts ...interface{}) {
+func (l *logger) Debug(m interface{}, opts ...interface{}) Logger {
 	fields, ms := getFields(m, opts)
 	l.Entry.WithFields(fields).Debug(ms...)
+
+	return l
 }
 
-func (l logger) Error(m interface{}, opts ...interface{}) {
+func (l *logger) Error(m interface{}, opts ...interface{}) Logger {
 	fields, ms := getFields(m, opts)
 	l.Entry.WithFields(fields).Error(ms...)
+
+	return l
 }
 
-func (l logger) NewChild(cname string) Logger {
+func (l *logger) NewChild(cname string) Logger {
 	l.Entry = l.Entry.WithFields(logrus.Fields{
 		"childService": cname,
 	})
@@ -77,32 +87,46 @@ func (l logger) NewChild(cname string) Logger {
 	return l
 }
 
-func (l logger) SetLevel(level string) {
+func (l *logger) SetLevel(level string) Logger {
 	switch level {
 	case "debug":
 		l.Logger.SetLevel(logrus.DebugLevel)
+		l.Level = logrus.DebugLevel
 
 	case "error":
 		l.Logger.SetLevel(logrus.ErrorLevel)
+		l.Level = logrus.ErrorLevel
 
 	case "info":
 		l.Logger.SetLevel(logrus.InfoLevel)
+		l.Level = logrus.InfoLevel
 
 	case "warn":
 		l.Logger.SetLevel(logrus.WarnLevel)
+		l.Level = logrus.WarnLevel
+
 	default:
 		l.Logger.SetLevel(logrus.InfoLevel)
+		l.Level = logrus.InfoLevel
+
 	}
+
+	return l
 }
 
-func (l logger) AddHook(hook logrus.Hook) {
+func (l *logger) AddHook(hook logrus.Hook) Logger {
 	l.Logger.AddHook(hook)
+
+	return l
+}
+
+func (l *logger) GetLevel() LogLevel {
+	return l.Level
 }
 
 func New(serviceName string) Logger {
-	l := logger{
-		ServiceName: serviceName,
-	}
+	l := new(logger)
+	l.ServiceName = serviceName
 
 	l.Logger = logrus.New()
 	l.Entry = l.Logger.WithFields(logrus.Fields{
