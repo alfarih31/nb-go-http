@@ -8,54 +8,73 @@ import (
 	"os"
 )
 
+var ErrorVarNotExist = errors.New("variable not exist")
+
 type env struct {
 	envs    map[string]string
 	useEnvs bool
 }
 
 type Env interface {
-	GetInt(k string, def int) (int, error)
-	GetString(k string, def string) (string, error)
-	GetBool(k string, def bool) (bool, error)
-	GetStringArr(k string, def []string) ([]string, error)
-	GetIntArr(k string, def []int) ([]int, error)
+	GetInt(k string, def ...int) (int, error)
+	GetString(k string, def ...string) (string, error)
+	GetBool(k string, def ...bool) (bool, error)
+	GetStringArr(k string, def ...[]string) ([]string, error)
+	GetIntArr(k string, def ...[]int) ([]int, error)
 	Dump() (string, error)
 }
 
-func (c env) GetInt(k string, def int) (int, error) {
+func (c env) GetInt(k string, def ...int) (int, error) {
 	cfg, exist := c.get(k)
 
 	if !exist {
-		return def, nil
+		if len(def) == 0 {
+			return 0, ErrorVarNotExist
+		}
+		return def[0], nil
 	}
 
 	i, e := parser.String(cfg).ToInt()
 
 	if e != nil {
-		return def, e
+		if len(def) == 0 {
+			return 0, e
+		}
+
+		return def[0], nil
 	}
 
 	return i, e
 }
 
-func (c env) GetString(k string, def string) (string, error) {
+func (c env) GetString(k string, def ...string) (string, error) {
 	cfg, exist := c.get(k)
 	if !exist {
-		return def, nil
+		if len(def) == 0 {
+			return "", ErrorVarNotExist
+		}
+		return def[0], nil
 	}
 
 	return cfg, nil
 }
 
-func (c env) GetBool(k string, def bool) (bool, error) {
+func (c env) GetBool(k string, def ...bool) (bool, error) {
 	cfg, exist := c.get(k)
 	if !exist {
-		return def, nil
+		if len(def) == 0 {
+			return false, ErrorVarNotExist
+		}
+		return def[0], nil
 	}
 
 	b, e := parser.String(cfg).ToBool()
 	if e != nil {
-		return def, e
+		if len(def) == 0 {
+			return false, e
+		}
+
+		return def[0], nil
 	}
 
 	return b, e
@@ -71,25 +90,36 @@ func (c env) get(k string) (string, bool) {
 	return cfg, cfg != ""
 }
 
-func (c env) GetStringArr(k string, def []string) ([]string, error) {
+func (c env) GetStringArr(k string, def ...[]string) ([]string, error) {
 	cfg, exist := c.get(k)
 	if !exist {
-		return def, nil
+		if len(def) == 0 {
+			return nil, ErrorVarNotExist
+		}
+
+		return def[0], nil
 	}
 
 	return parser.String(cfg).ToStringArr()
 }
 
-func (c env) GetIntArr(k string, def []int) ([]int, error) {
+func (c env) GetIntArr(k string, def ...[]int) ([]int, error) {
 	cfg, exist := c.get(k)
 	if !exist {
-		return def, nil
+		if len(def) == 0 {
+			return nil, ErrorVarNotExist
+		}
+		return def[0], nil
 	}
 
 	is, e := parser.String(cfg).ToIntArr()
 
 	if e != nil {
-		return def, e
+		if len(def) == 0 {
+			return nil, e
+		}
+
+		return def[0], nil
 	}
 
 	return is, e
