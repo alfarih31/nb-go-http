@@ -27,89 +27,98 @@ func getOptions(key string, opt []QueryParserOption) (interface{}, error) {
 	return nil, nil
 }
 
-func (p QueryParser) GetString(key string, opt ...QueryParserOption) (string, error) {
+func (p QueryParser) GetString(key string, opt ...QueryParserOption) (*string, error) {
 	val := p.Query(key)
 
 	if val == "" {
 		optVal, err := getOptions(key, opt)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
-		if optVal == nil {
-			return "", nil
+		if optVal != nil {
+			v := optVal.(string)
+			return &v, nil
 		}
 
-		return optVal.(string), nil
+		return nil, nil
 	}
 
-	return val, nil
+	return &val, nil
 }
 
-func (p QueryParser) GetInt(key string, opt ...QueryParserOption) (int, error) {
+func (p QueryParser) GetInt(key string, opt ...QueryParserOption) (*int, error) {
 	val := p.Query(key)
 
+	optVal, optErr := getOptions(key, opt)
+
 	if val == "" {
-		optVal, err := getOptions(key, opt)
-		if err != nil {
-			return 0, err
+		if optErr != nil {
+			return nil, optErr
 		}
 
-		if optVal == nil {
-			return 0, nil
+		if optVal != nil {
+			v := optVal.(int)
+
+			return &v, nil
 		}
 
-		return optVal.(int), nil
+		return nil, nil
 	}
 
 	i, err := parser.String(val).ToInt()
 
 	if err != nil {
-		optVal, e := getOptions(key, opt)
-		if e != nil {
-			return 0, e
+		if optErr != nil {
+			return nil, err
 		}
 
-		if optVal == nil {
-			return 0, nil
+		if optVal != nil {
+			v := optVal.(int)
+
+			return &v, nil
 		}
 
-		return optVal.(int), nil
+		return nil, nil
 	}
 
-	return i, err
+	return &i, err
 }
 
-func (p QueryParser) GetBool(key string, opt ...QueryParserOption) (bool, error) {
+func (p QueryParser) GetBool(key string, opt ...QueryParserOption) (*bool, error) {
 	val := p.Query(key)
 
+	optVal, optErr := getOptions(key, opt)
+
 	if val == "" {
-		optVal, err := getOptions(key, opt)
-		if err != nil {
-			return false, err
+		if optErr != nil {
+			return nil, optErr
 		}
 
-		if optVal == nil {
-			return false, nil
+		if optVal != nil {
+			v := optVal.(bool)
+
+			return &v, nil
 		}
 
-		return optVal.(bool), nil
+		return nil, nil
 	}
 
 	b, err := parser.String(val).ToBool()
 
 	if err != nil {
-		optVal, e := getOptions(key, opt)
-		if e != nil {
-			return false, e
+		if optErr != nil {
+			return nil, err
 		}
 
-		if optVal == nil {
-			return false, nil
+		if optVal != nil {
+			v := optVal.(bool)
+
+			return &v, nil
 		}
 
-		return optVal.(bool), nil
+		return nil, nil
 	}
 
-	return b, err
+	return &b, err
 }
