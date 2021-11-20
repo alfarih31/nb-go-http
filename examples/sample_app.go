@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/alfarih31/nb-go-http"
 	"github.com/alfarih31/nb-go-http/app_err"
 	"github.com/alfarih31/nb-go-http/cors"
@@ -185,6 +186,21 @@ func main() {
 				}).SetRouter(g1.BranchRouter("/deep"))
 
 				g1.Handle("GET /first-inner", func(c *noob.HandlerCtx) *noob.Response {
+					qp := noob.QueryParser(*c)
+					q1, err := qp.GetInt("q1")
+					fmt.Println("q1", q1, err)
+
+					qReq, err := qp.GetInt("qreq", noob.QueryParserOption{
+						Required: true,
+					})
+					fmt.Println("qreq", qReq, err)
+
+					qReqWithDef, err := qp.GetInt("qreqdef", noob.QueryParserOption{
+						Default:  345,
+						Required: true,
+					})
+					fmt.Println("qreqWithDef", qReqWithDef, err)
+
 					return &noob.Response{
 						Body: ResponseBody{
 							Status: ResponseStatus{

@@ -151,6 +151,7 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}, frames *runt
 		r = h.ResponseMapper.Get(er.Code, nil)
 
 		// Put to Parsed Error
+		parsedErr.Err = er.Err
 		parsedErr.Code = er.Code
 		parsedErr.Stack = er.Stack
 
@@ -159,7 +160,11 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}, frames *runt
 			er.Stack = nil
 		}
 
-		r.ComposeBody(keyvalue.KeyValue{"_error": er})
+		if h.Debug {
+			r.ComposeBody(keyvalue.KeyValue{"_error": parsedErr.JSON()})
+		} else {
+			r.ComposeBody(keyvalue.KeyValue{"_error": parsedErr.Error()})
+		}
 	case Response:
 		r = er
 		parsedErr.Err = fmt.Errorf("%v", er.Body)
@@ -168,12 +173,25 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}, frames *runt
 		parsedErr.Err = fmt.Errorf("%v", er.Body)
 	case error:
 		parsedErr.Err = er
-		r.ComposeBody(keyvalue.KeyValue{"_error": er})
+		if h.Debug {
+			r.ComposeBody(keyvalue.KeyValue{"_error": parsedErr.JSON()})
+		} else {
+			r.ComposeBody(keyvalue.KeyValue{"_error": parsedErr.Error()})
+		}
 	case string:
 		parsedErr.Err = errors.New(er)
-		r.ComposeBody(keyvalue.KeyValue{"_error": er})
+		if h.Debug {
+			r.ComposeBody(keyvalue.KeyValue{"_error": parsedErr.JSON()})
+		} else {
+			r.ComposeBody(keyvalue.KeyValue{"_error": parsedErr.Error()})
+		}
 	default:
-		r.ComposeBody(keyvalue.KeyValue{"_error": er})
+		parsedErr.Err = fmt.Errorf("%v", er)
+		if h.Debug {
+			r.ComposeBody(keyvalue.KeyValue{"_error": parsedErr.JSON()})
+		} else {
+			r.ComposeBody(keyvalue.KeyValue{"_error": parsedErr.Error()})
+		}
 	}
 
 	// Stack Error to Context
