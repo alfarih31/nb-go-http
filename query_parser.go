@@ -85,6 +85,84 @@ func (p QueryParser) GetInt(key string, opt ...QueryParserOption) (*int, error) 
 	return &i, err
 }
 
+func (p QueryParser) GetInt32(key string, opt ...QueryParserOption) (*int32, error) {
+	val := p.Query(key)
+
+	optVal, optErr := getOptions(key, opt)
+
+	if val == "" {
+		if optErr != nil {
+			return nil, optErr
+		}
+
+		if optVal != nil {
+			v := optVal.(int32)
+
+			return &v, nil
+		}
+
+		return nil, nil
+	}
+
+	i, err := parser.String(val).ToInt()
+	i32 := int32(i)
+
+	if err != nil {
+		if optErr != nil {
+			return nil, err
+		}
+
+		if optVal != nil {
+			v := optVal.(int32)
+
+			return &v, nil
+		}
+
+		return nil, nil
+	}
+
+	return &i32, err
+}
+
+func (p QueryParser) GetInt64(key string, opt ...QueryParserOption) (*int64, error) {
+	val := p.Query(key)
+
+	optVal, optErr := getOptions(key, opt)
+
+	if val == "" {
+		if optErr != nil {
+			return nil, optErr
+		}
+
+		if optVal != nil {
+			v := optVal.(int64)
+
+			return &v, nil
+		}
+
+		return nil, nil
+	}
+
+	i, err := parser.String(val).ToInt()
+	i64 := int64(i)
+
+	if err != nil {
+		if optErr != nil {
+			return nil, err
+		}
+
+		if optVal != nil {
+			v := optVal.(int64)
+
+			return &v, nil
+		}
+
+		return nil, nil
+	}
+
+	return &i64, err
+}
+
 func (p QueryParser) GetBool(key string, opt ...QueryParserOption) (*bool, error) {
 	val := p.Query(key)
 
