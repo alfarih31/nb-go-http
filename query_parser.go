@@ -70,7 +70,7 @@ func (p QueryParser) GetInt(key string, opt ...QueryParserOption) (*int, error) 
 
 	if err != nil {
 		if optErr != nil {
-			return nil, err
+			return nil, fmt.Errorf("qs: %s error, %v", key, err)
 		}
 
 		if optVal != nil {
@@ -109,7 +109,7 @@ func (p QueryParser) GetInt32(key string, opt ...QueryParserOption) (*int32, err
 
 	if err != nil {
 		if optErr != nil {
-			return nil, err
+			return nil, fmt.Errorf("qs: %s error, %v", key, err)
 		}
 
 		if optVal != nil {
@@ -148,7 +148,7 @@ func (p QueryParser) GetInt64(key string, opt ...QueryParserOption) (*int64, err
 
 	if err != nil {
 		if optErr != nil {
-			return nil, err
+			return nil, fmt.Errorf("qs: %s error, %v", key, err)
 		}
 
 		if optVal != nil {
@@ -186,7 +186,7 @@ func (p QueryParser) GetBool(key string, opt ...QueryParserOption) (*bool, error
 
 	if err != nil {
 		if optErr != nil {
-			return nil, err
+			return nil, fmt.Errorf("qs: %s error, %v", key, err)
 		}
 
 		if optVal != nil {
