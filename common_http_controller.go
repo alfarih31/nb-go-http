@@ -21,21 +21,26 @@ type ThrottlingCfg struct {
 const DefaultMaxBurstSize = 20
 const DefaultMaxEventPerSec = 1000
 
+func APIStatus(startTime time.Time, meta keyvalue.KeyValue) keyvalue.KeyValue {
+	u := time.Since(startTime).String()
+
+	res := keyvalue.KeyValue{
+		"uptime": u,
+	}
+
+	res.Assign(meta, true)
+
+	return res
+}
+
 func (cc CommonController) APIStatus(m keyvalue.KeyValue) HTTPHandler {
 	return func(c *HandlerCtx) *Response {
-		u := time.Since(cc.StartTime).String()
-
-		resData := keyvalue.KeyValue{
-			"uptime": u,
-		}
-
-		resData.Assign(m, true)
 
 		return &Response{
 			Body: struct {
 				Data interface{} `json:"data"`
 			}{
-				Data: resData,
+				Data: APIStatus(cc.StartTime, m),
 			},
 		}
 	}
