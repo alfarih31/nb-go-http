@@ -12,12 +12,12 @@ replace (
 go 1.17
 
 require (
-	github.com/alfarih31/nb-go-http/app_err v0.0.0-00010101000000-000000000000
-	github.com/alfarih31/nb-go-http/env v0.0.0-00010101000000-000000000000
-	github.com/alfarih31/nb-go-http/keyvalue v0.0.0-00010101000000-000000000000
-	github.com/alfarih31/nb-go-http/logger v0.0.0-00010101000000-000000000000
-	github.com/alfarih31/nb-go-http/parser v0.0.0-00010101000000-000000000000
-	github.com/alfarih31/nb-go-http/tcf v0.0.0-00010101000000-000000000000
+	github.com/alfarih31/nb-go-http/app_err v1.3.19
+	github.com/alfarih31/nb-go-http/env v1.3.19
+	github.com/alfarih31/nb-go-http/keyvalue v1.3.19
+	github.com/alfarih31/nb-go-http/logger v1.3.19
+	github.com/alfarih31/nb-go-http/parser v1.3.19
+	github.com/alfarih31/nb-go-http/tcf v1.3.19
 	github.com/gin-gonic/gin v1.7.4
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac
 )
