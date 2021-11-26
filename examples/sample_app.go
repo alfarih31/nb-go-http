@@ -1,3 +1,5 @@
+// This file is not part of the project structure. This file is just an example
+
 package main
 
 import (

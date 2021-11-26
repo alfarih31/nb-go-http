@@ -1,0 +1,4 @@
+github.com/alfarih31/nb-go-http v1.3.16 h1:sgh+uzt3Fq0bLwT04mb6h+Efwt4rgDCky1ETa79kMS0=
+github.com/alfarih31/nb-go-http v1.3.16/go.mod h1:zbadYsKnePfwm9v/VVd36yQ/3EjUCaOdZProggY077w=
+github.com/joho/godotenv v1.4.0 h1:3l4+N6zfMWnkbPEXKng2o2/MR5mSwTrBih4ZEkkz1lg=
+github.com/joho/godotenv v1.4.0/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=

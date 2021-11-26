@@ -2,6 +2,7 @@ package noob
 
 import (
 	"github.com/gin-gonic/gin"
+	"net"
 )
 
 type ExtHandlerCtx = gin.Context
@@ -82,6 +83,10 @@ func (t HTTPProviderCtx) Router(path string) *ExtRouter {
 
 func (t HTTPProviderCtx) Run(url string) error {
 	return t.Engine.Run(url)
+}
+
+func (t HTTPProviderCtx) RunListener(listener net.Listener) error {
+	return t.Engine.RunListener(listener)
 }
 
 func ExtHTTP() *HTTPProviderCtx {

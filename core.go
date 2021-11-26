@@ -9,6 +9,7 @@ import (
 	"github.com/alfarih31/nb-go-http/logger"
 	"github.com/alfarih31/nb-go-http/parser"
 	"github.com/gin-gonic/gin"
+	"net"
 	"os"
 	"time"
 )
@@ -19,7 +20,7 @@ type CoreCtx struct {
 	Logger    logger.Logger
 
 	Meta  keyvalue.KeyValue
-	Setup func()
+	Setup func() // This function will be called when you call the Start of CoreCtx, hence you need to pass the Setup function or the application will be failed to start
 
 	*HTTPControllerCtx
 }
@@ -30,6 +31,7 @@ type StartArg struct {
 	Path       string
 	CORS       *cors.Cfg
 	Throttling *ThrottlingCfg
+	Listener   *net.Listener // Optional use net.Listener if want to start using *net.Listener
 }
 
 type CoreCfg struct {
@@ -38,10 +40,11 @@ type CoreCfg struct {
 	ResponseMapper *ResponseMapperCtx
 }
 
-func (co *CoreCtx) Boot() {
+func (co *CoreCtx) boot() {
 	co.Setup()
 }
 
+// Start will runt the Core & start serving the application
 func (co *CoreCtx) Start(cfg StartArg) {
 	common := CommonController{
 		Logger:    co.Logger.NewChild("CommonController"),
@@ -64,7 +67,7 @@ func (co *CoreCtx) Start(cfg StartArg) {
 		}
 	}
 
-	co.Boot()
+	co.boot()
 
 	co.Handle("GET /", common.APIStatus(co.Meta))
 
@@ -78,7 +81,13 @@ func (co *CoreCtx) Start(cfg StartArg) {
 	co.Logger.Info(fmt.Sprintf("TimeToBoot = %s Running: BaseUrl = '%s' Path = '%s'", time.Since(co.startTime).String(), baseUrlInfo, cfg.Path), map[string]interface{}{
 		"url": fmt.Sprintf("%s%s", baseUrlInfo, cfg.Path),
 	})
-	e := co.Provider.Run(fmt.Sprintf("%s:%d", cfg.Host, cfg.Port))
+
+	var e error
+	if cfg.Listener != nil {
+		e = co.Provider.Engine.RunListener(*cfg.Listener)
+	} else {
+		e = co.Provider.Run(fmt.Sprintf("%s:%d", cfg.Host, cfg.Port))
+	}
 
 	if e != nil {
 		co.Logger.Error("Failed to start, error happened!", map[string]interface{}{"_error": e})
@@ -107,6 +116,7 @@ func validateCoreConfig(config *CoreCfg) {
 	}
 }
 
+// New return Core context, used as core of the application
 func New(config *CoreCfg) *CoreCtx {
 	isDebug, _ := parser.String(os.Getenv("DEBUG")).ToBool()
 

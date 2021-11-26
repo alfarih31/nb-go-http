@@ -219,6 +219,7 @@ func (h *HTTPControllerCtx) SetRouter(r *ExtRouter) *HTTPControllerCtx {
 	return h
 }
 
+// NewController return an HTTPControllerCtx
 func NewController(arg ControllerArg) *HTTPControllerCtx {
 	isDebug, _ := parser.String(os.Getenv("DEBUG")).ToBool()
 
