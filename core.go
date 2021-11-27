@@ -76,16 +76,24 @@ func (co *CoreCtx) Start(cfg StartArg) {
 		hostInfo = "http://localhost"
 	}
 
-	baseUrlInfo := fmt.Sprintf("%s:%d", hostInfo, cfg.Port)
+	var (
+		e error
+	)
 
-	co.Logger.Info(fmt.Sprintf("TimeToBoot = %s Running: BaseUrl = '%s' Path = '%s'", time.Since(co.startTime).String(), baseUrlInfo, cfg.Path), map[string]interface{}{
-		"url": fmt.Sprintf("%s%s", baseUrlInfo, cfg.Path),
-	})
-
-	var e error
 	if cfg.Listener != nil {
+		url := fmt.Sprintf("%s%s", (*cfg.Listener).Addr().String(), cfg.Path)
+		co.Logger.Info(fmt.Sprintf("TimeToBoot = %s Running: Address = '%s'", time.Since(co.startTime).String(), url), map[string]interface{}{
+			"address": url,
+		})
+
 		e = co.Provider.Engine.RunListener(*cfg.Listener)
 	} else {
+		baseUrlInfo := fmt.Sprintf("%s:%d", hostInfo, cfg.Port)
+		url := fmt.Sprintf("%s%s", baseUrlInfo, cfg.Path)
+		co.Logger.Info(fmt.Sprintf("TimeToBoot = %s Running: Url = '%s'", time.Since(co.startTime).String(), url), map[string]interface{}{
+			"url": url,
+		})
+
 		e = co.Provider.Run(fmt.Sprintf("%s:%d", cfg.Host, cfg.Port))
 	}
 

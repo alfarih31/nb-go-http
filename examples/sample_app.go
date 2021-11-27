@@ -12,6 +12,7 @@ import (
 	"github.com/alfarih31/nb-go-http/keyvalue"
 	"github.com/alfarih31/nb-go-http/logger"
 	"github.com/alfarih31/nb-go-http/tcf"
+	"net"
 	"net/http"
 	"runtime"
 	"runtime/debug"
@@ -240,6 +241,8 @@ func main() {
 				app.Logger.Debug("Init Controllers OK...", nil)
 			}
 
+			lis, _ := net.Listen("tcp", fmt.Sprintf("localhost:%d", basePort))
+
 			app.Start(noob.StartArg{
 				Host: baseHost,
 				Path: basePath,
@@ -247,6 +250,7 @@ func main() {
 				CORS: &cors.Cfg{
 					Enable: true,
 				},
+				Listener: &lis,
 				Throttling: &noob.ThrottlingCfg{
 					MaxEventPerSec: 2,
 					MaxBurstSize:   1,
