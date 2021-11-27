@@ -68,6 +68,13 @@ func (cc CommonController) RequestLogger() HTTPHandler {
 
 func (cc CommonController) HandleNotFound() HTTPHandler {
 	return func(context *HandlerCtx) *Response {
+		// Don't handle if http version > 1
+		if context.Request.ProtoMajor > 1 {
+			context.Next()
+
+			return nil
+		}
+
 		HTTPError.NotFound.Throw("")
 		return nil
 	}
