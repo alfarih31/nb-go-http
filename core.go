@@ -19,8 +19,9 @@ type CoreCtx struct {
 	Provider  *HTTPProviderCtx
 	Logger    logger.Logger
 
-	Meta  keyvalue.KeyValue
-	Setup func() // This function will be called when you call the Start of CoreCtx, hence you need to pass the Setup function or the application will be failed to start
+	Meta     keyvalue.KeyValue
+	Setup    func() // This function will be called when you call the Start of CoreCtx, hence you need to pass the Setup function or the application will be failed to start
+	Listener net.Listener
 
 	*HTTPControllerCtx
 }
@@ -31,13 +32,13 @@ type StartArg struct {
 	Path       string
 	CORS       *cors.Cfg
 	Throttling *ThrottlingCfg
-	Listener   *net.Listener // Optional use net.Listener if want to start using *net.Listener
 }
 
 type CoreCfg struct {
 	Context        context.Context
 	Meta           *keyvalue.KeyValue
 	ResponseMapper *ResponseMapperCtx
+	Listener       net.Listener // Optional use net.Listener if want to start using *net.Listener
 }
 
 func (co *CoreCtx) boot() {
@@ -80,13 +81,13 @@ func (co *CoreCtx) Start(cfg StartArg) {
 		e error
 	)
 
-	if cfg.Listener != nil {
-		url := fmt.Sprintf("%s%s", (*cfg.Listener).Addr().String(), cfg.Path)
+	if co.Listener != nil {
+		url := fmt.Sprintf("%s%s", co.Listener.Addr().String(), cfg.Path)
 		co.Logger.Info(fmt.Sprintf("TimeToBoot = %s Running: Address = '%s'", time.Since(co.startTime).String(), url), map[string]interface{}{
 			"address": url,
 		})
 
-		e = co.Provider.Engine.RunListener(*cfg.Listener)
+		e = co.Provider.Engine.RunListener(co.Listener)
 	} else {
 		baseUrlInfo := fmt.Sprintf("%s:%d", hostInfo, cfg.Port)
 		url := fmt.Sprintf("%s%s", baseUrlInfo, cfg.Path)
@@ -150,6 +151,7 @@ func New(config *CoreCfg) *CoreCtx {
 		Logger:            l,
 		Setup:             notImplemented("Setup"),
 		HTTPControllerCtx: rc,
+		Listener:          config.Listener,
 	}
 
 	return c
