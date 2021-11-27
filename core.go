@@ -27,11 +27,12 @@ type CoreCtx struct {
 }
 
 type StartArg struct {
-	Host       string
-	Port       int
-	Path       string
-	CORS       *cors.Cfg
-	Throttling *ThrottlingCfg
+	Host        string
+	Port        int
+	Path        string
+	CORS        *cors.Cfg
+	Throttling  *ThrottlingCfg
+	UseListener bool
 }
 
 type CoreCfg struct {
@@ -81,7 +82,8 @@ func (co *CoreCtx) Start(cfg StartArg) {
 		e error
 	)
 
-	if co.Listener != nil {
+	// If use listener then start using listener
+	if co.Listener != nil && cfg.UseListener {
 		url := fmt.Sprintf("%s%s", co.Listener.Addr().String(), cfg.Path)
 		co.Logger.Info(fmt.Sprintf("TimeToBoot = %s Running: Address = '%s'", time.Since(co.startTime).String(), url), map[string]interface{}{
 			"address": url,
