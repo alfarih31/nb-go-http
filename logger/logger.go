@@ -80,11 +80,13 @@ func (l *logger) Error(m interface{}, opts ...interface{}) Logger {
 }
 
 func (l *logger) NewChild(cname string) Logger {
-	l.Entry = l.Entry.WithFields(logrus.Fields{
+	newLogger := *l
+
+	newLogger.Entry = l.Entry.WithFields(logrus.Fields{
 		"childService": cname,
 	})
 
-	return l
+	return &newLogger
 }
 
 func (l *logger) SetLevel(level string) Logger {
