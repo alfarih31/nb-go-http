@@ -5,8 +5,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/alfarih31/nb-go-http"
 	"github.com/alfarih31/nb-go-http/app_err"
+	noob "github.com/alfarih31/nb-go-http/core"
 	"github.com/alfarih31/nb-go-http/cors"
 	_env "github.com/alfarih31/nb-go-http/env"
 	"github.com/alfarih31/nb-go-http/keyvalue"
@@ -171,11 +171,6 @@ func main() {
 			})
 
 			app.Setup = func() {
-
-				app.Handle("USE", func(context *noob.HandlerCtx) *noob.Response {
-					context.Next()
-					return nil
-				})
 
 				g1 := noob.NewController(noob.ControllerArg{
 					Logger:         app.Logger.NewChild("G1-Controller"),
