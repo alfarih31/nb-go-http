@@ -58,7 +58,7 @@ func (c *HandlerCtx) Errors() Errors {
 	return c.Keys[extKeyErrors].(Errors)
 }
 
-func WrapExtHandlerCtx(ec *ExtHandlerCtx) *HandlerCtx {
+func WrapHandlerCtx(ec *gin.Context) *HandlerCtx {
 	ec.Keys = map[string]interface{}{
 		extKeyErrors: Errors{},
 	}

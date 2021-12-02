@@ -8,6 +8,7 @@ import (
 	"github.com/alfarih31/nb-go-http/logger"
 	"github.com/alfarih31/nb-go-http/parser"
 	"github.com/alfarih31/nb-go-http/tcf"
+	"github.com/gin-gonic/gin"
 	"math"
 	"net/http"
 	"os"
@@ -18,10 +19,21 @@ import (
 const abortIndex int8 = math.MaxInt8 / 2
 
 type HTTPControllerCtx struct {
-	router         *ExtRouter
+	router         *Router
 	Logger         logger.Logger
 	ResponseMapper *ResponseMapperCtx
 	Debug          bool
+}
+
+type HTTPController interface {
+	SendError(c *HandlerCtx, e interface{}, frames *runtime.Frames)
+	SendSuccess(c *HandlerCtx, res *Response)
+	GetSpec(spec string) HandlerSpec
+	AdaptHandler(handler HTTPHandler) Handler
+	AdaptHandlers(handlers []HTTPHandler) []Handler
+	BranchRouter(path string) *Router
+	Handle(spec string, handlers ...HTTPHandler)
+	SetRouter(r *Router) *HTTPControllerCtx
 }
 
 type ControllerArg struct {
@@ -35,16 +47,9 @@ type HandlerSpec struct {
 }
 
 func (h *HTTPControllerCtx) GetSpec(spec string) HandlerSpec {
-	if spec == "" {
-		apperr.Throw(apperr.New("Handler Spec cannot be empty!"))
-	}
-	specArr := make([]string, 2, 2)
-
-	for i, s := range strings.Split(spec, " ") {
-		specArr[i] = s
-		if i == 1 {
-			break
-		}
+	specArr := strings.SplitN(spec, " ", 2)
+	if len(specArr) != 2 {
+		apperr.Throw(apperr.New("Handler spec wrong format, expected: {METHOD} {PATH}, example: \"GET /foo\""))
 	}
 
 	method := specArr[0]
@@ -60,9 +65,9 @@ func (h *HTTPControllerCtx) GetSpec(spec string) HandlerSpec {
 	return HandlerSpec{method, path}
 }
 
-func (h *HTTPControllerCtx) ToExtHandler(handler HTTPHandler) ExtHandler {
-	return func(ec *ExtHandlerCtx) {
-		c := WrapExtHandlerCtx(ec)
+func (h *HTTPControllerCtx) AdaptHandler(handler HTTPHandler) Handler {
+	return func(ec *gin.Context) {
+		c := WrapHandlerCtx(ec)
 		tcf.TCFunc(tcf.Func{
 			Try: func() {
 				res := handler(c)
@@ -78,17 +83,17 @@ func (h *HTTPControllerCtx) ToExtHandler(handler HTTPHandler) ExtHandler {
 	}
 }
 
-func (h *HTTPControllerCtx) ToExtHandlers(handlers []HTTPHandler) []ExtHandler {
-	extHandlers := make([]ExtHandler, len(handlers), len(handlers))
+func (h *HTTPControllerCtx) AdaptHandlers(handlers []HTTPHandler) []Handler {
+	extHandlers := make([]Handler, len(handlers), len(handlers))
 
 	for i, handler := range handlers {
-		extHandlers[i] = h.ToExtHandler(handler)
+		extHandlers[i] = h.AdaptHandler(handler)
 	}
 
 	return extHandlers
 }
 
-func (h *HTTPControllerCtx) BranchRouter(path string) *ExtRouter {
+func (h *HTTPControllerCtx) BranchRouter(path string) *Router {
 	h.Logger.Debug(fmt.Sprintf("Branching Controller Router with Path : %s", path), map[string]interface{}{
 		"branchFullPath": fmt.Sprintf("%s%s", h.router.fullPath, path),
 	})
@@ -105,21 +110,21 @@ func (h *HTTPControllerCtx) Handle(spec string, handlers ...HTTPHandler) {
 
 	switch strings.ToUpper(handlerSpec.method) {
 	case "GET":
-		h.router.GET(handlerSpec.path, h.ToExtHandlers(handlers)...)
+		h.router.GET(handlerSpec.path, h.AdaptHandlers(handlers)...)
 	case "POST":
-		h.router.POST(handlerSpec.path, h.ToExtHandlers(handlers)...)
+		h.router.POST(handlerSpec.path, h.AdaptHandlers(handlers)...)
 	case "PUT":
-		h.router.PUT(handlerSpec.path, h.ToExtHandlers(handlers)...)
+		h.router.PUT(handlerSpec.path, h.AdaptHandlers(handlers)...)
 	case "DELETE":
-		h.router.DELETE(handlerSpec.path, h.ToExtHandlers(handlers)...)
+		h.router.DELETE(handlerSpec.path, h.AdaptHandlers(handlers)...)
 	case "OPTIONS":
-		h.router.OPTIONS(handlerSpec.path, h.ToExtHandlers(handlers)...)
+		h.router.OPTIONS(handlerSpec.path, h.AdaptHandlers(handlers)...)
 	case "HEAD":
-		h.router.HEAD(handlerSpec.path, h.ToExtHandlers(handlers)...)
+		h.router.HEAD(handlerSpec.path, h.AdaptHandlers(handlers)...)
 	case "PATCH":
-		h.router.PATCH(handlerSpec.path, h.ToExtHandlers(handlers)...)
+		h.router.PATCH(handlerSpec.path, h.AdaptHandlers(handlers)...)
 	case "USE":
-		h.router.USE(h.ToExtHandlers(handlers)...)
+		h.router.USE(h.AdaptHandlers(handlers)...)
 	default:
 		apperr.Throw(apperr.New(fmt.Sprintf("Unknown HTTP Handle Spec: %s", spec)))
 	}
@@ -209,7 +214,7 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}, frames *runt
 	}
 }
 
-func (h *HTTPControllerCtx) SetRouter(r *ExtRouter) *HTTPControllerCtx {
+func (h *HTTPControllerCtx) SetRouter(r *Router) *HTTPControllerCtx {
 	if r == nil {
 		apperr.Throw(apperr.New("setRouter r cannot be nil!"))
 	}
@@ -219,8 +224,8 @@ func (h *HTTPControllerCtx) SetRouter(r *ExtRouter) *HTTPControllerCtx {
 	return h
 }
 
-// NewController return an HTTPControllerCtx
-func NewController(arg ControllerArg) *HTTPControllerCtx {
+// NewHTTPController return HTTPController
+func NewHTTPController(arg ControllerArg) HTTPController {
 	isDebug, _ := parser.String(os.Getenv("DEBUG")).ToBool()
 
 	arg.Logger.Debug("OK", nil)

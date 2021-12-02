@@ -172,12 +172,12 @@ func main() {
 
 			app.Setup = func() {
 
-				g1 := noob.NewController(noob.ControllerArg{
+				g1 := noob.NewHTTPController(noob.ControllerArg{
 					Logger:         app.Logger.NewChild("G1-Controller"),
 					ResponseMapper: responseMapper,
 				}).SetRouter(app.BranchRouter("/sample"))
 
-				g2 := noob.NewController(noob.ControllerArg{
+				g2 := noob.NewHTTPController(noob.ControllerArg{
 					Logger:         app.Logger.NewChild("G2-Controller"),
 					ResponseMapper: responseMapper,
 				}).SetRouter(g1.BranchRouter("/deep"))

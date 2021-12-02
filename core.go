@@ -23,7 +23,7 @@ type CoreCtx struct {
 	Setup    func() // This function will be called when you call the Start of CoreCtx, hence you need to pass the Setup function or the application will be failed to start
 	Listener net.Listener
 
-	*HTTPControllerCtx
+	HTTPController
 }
 
 type StartArg struct {
@@ -55,7 +55,7 @@ func (co *CoreCtx) Start(cfg StartArg) {
 
 	co.SetRouter(co.Provider.Router(cfg.Path))
 
-	co.Provider.Engine.NoRoute(co.ToExtHandlers([]HTTPHandler{common.RequestLogger(), common.HandleNotFound()})...)
+	co.Provider.Engine.NoRoute(co.AdaptHandlers([]HTTPHandler{common.RequestLogger(), common.HandleNotFound()})...)
 
 	if cfg.Throttling != nil {
 		co.Handle("USE", common.Throttling(cfg.Throttling.MaxEventPerSec, cfg.Throttling.MaxEventPerSec))
@@ -139,21 +139,21 @@ func New(config *CoreCfg) *CoreCtx {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	p := ExtHTTP()
+	p := HTTP()
 
-	rc := NewController(ControllerArg{
+	rc := NewHTTPController(ControllerArg{
 		Logger:         l.NewChild("RootController"),
 		ResponseMapper: config.ResponseMapper,
 	})
 
 	c := &CoreCtx{
-		startTime:         time.Now(),
-		Provider:          p,
-		Meta:              *config.Meta,
-		Logger:            l,
-		Setup:             notImplemented("Setup"),
-		HTTPControllerCtx: rc,
-		Listener:          config.Listener,
+		startTime:      time.Now(),
+		Provider:       p,
+		Meta:           *config.Meta,
+		Logger:         l,
+		Setup:          notImplemented("Setup"),
+		HTTPController: rc,
+		Listener:       config.Listener,
 	}
 
 	return c
