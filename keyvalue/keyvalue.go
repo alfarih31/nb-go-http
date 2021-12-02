@@ -92,6 +92,12 @@ func (k KeyValue) String() string {
 	return string(j)
 }
 
+func (k KeyValue) Unmarshal(i interface{}) error {
+	err := json.Unmarshal([]byte(k.String()), i)
+
+	return err
+}
+
 func IsAbleToConvert(p interface{}) bool {
 	t := reflect.TypeOf(p)
 	name := t.Name()
