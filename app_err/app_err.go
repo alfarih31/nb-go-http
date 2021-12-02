@@ -63,15 +63,22 @@ func (msg *AppErr) Errors() interface{} {
 }
 
 func (msg AppErr) Throw(message string, data ...interface{}) {
-	msg.Stack = StackTrace()
+	e := msg.Compose(message, data)
+
+	panic(&e)
+}
+
+func (msg AppErr) Compose(message string, data ...interface{}) AppErr {
+	e := msg
+	e.Stack = StackTrace()
 
 	if message != "" {
-		msg.Err = errors.New(message)
+		e.Err = errors.New(message)
 	}
 
-	msg.Meta = data
+	e.Meta = data
 
-	panic(&msg)
+	return msg
 }
 
 func Throw(e *AppErr) {
