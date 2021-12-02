@@ -53,18 +53,12 @@ func (h *HTTPControllerCtx) GetSpec(spec string) HandlerSpec {
 	}
 
 	method := specArr[0]
-	if method == "" {
-		method = "GET"
-	}
 
 	if strings.ToUpper(method) == "USE" {
 		return HandlerSpec{method, "/"}
 	}
 
 	path := specArr[1]
-	if path == "" {
-		path = "/"
-	}
 
 	return HandlerSpec{method, path}
 }
