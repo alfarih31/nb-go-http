@@ -48,13 +48,17 @@ type HandlerSpec struct {
 
 func (h *HTTPControllerCtx) GetSpec(spec string) HandlerSpec {
 	specArr := strings.SplitN(spec, " ", 2)
-	if len(specArr) != 2 {
+	if len(specArr) < 1 {
 		apperr.Throw(apperr.New("Handler spec wrong format, expected: {METHOD} {PATH}, example: \"GET /foo\""))
 	}
 
 	method := specArr[0]
 	if method == "" {
 		method = "GET"
+	}
+
+	if strings.ToUpper(method) == "USE" {
+		return HandlerSpec{method, "/"}
 	}
 
 	path := specArr[1]
