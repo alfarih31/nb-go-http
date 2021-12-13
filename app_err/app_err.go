@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/DataDog/gostackparse"
-	"github.com/alfarih31/nb-go-http/keyvalue"
+	"github.com/alfarih31/nb-go-keyvalue"
 	"reflect"
 	"runtime"
 	"runtime/debug"

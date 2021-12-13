@@ -1,7 +1,7 @@
 package noob
 
 import (
-	"github.com/alfarih31/nb-go-http/keyvalue"
+	"github.com/alfarih31/nb-go-keyvalue"
 )
 
 type Response struct {

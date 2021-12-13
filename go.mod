@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/DataDog/gostackparse v0.5.0
+	github.com/alfarih31/nb-go-keyvalue v1.0.1
 	github.com/gin-gonic/gin v1.7.7
 	github.com/joho/godotenv v1.4.0
 	github.com/sirupsen/logrus v1.8.1
