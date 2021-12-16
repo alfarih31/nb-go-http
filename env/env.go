@@ -3,7 +3,7 @@ package env
 import (
 	"encoding/json"
 	"errors"
-	"github.com/alfarih31/nb-go-http/parser"
+	"github.com/alfarih31/nb-go-parser"
 	"github.com/joho/godotenv"
 	"os"
 )

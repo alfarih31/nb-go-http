@@ -2,6 +2,8 @@ github.com/DataDog/gostackparse v0.5.0 h1:jb72P6GFHPHz2W0onsN51cS3FkaMDcjb0Qzgxx
 github.com/DataDog/gostackparse v0.5.0/go.mod h1:lTfqcJKqS9KnXQGnyQMCugq3u1FP6UZMfWR0aitKFMM=
 github.com/alfarih31/nb-go-keyvalue v1.0.1 h1:MIFFyaaAQPDTJlEpKkAw3+tz0f/x/gFxkUsIT85teE0=
 github.com/alfarih31/nb-go-keyvalue v1.0.1/go.mod h1:qXXX7DRMoOfvuSzfoxe2l155wLNHSQesF3uq9Y5xG5Q=
+github.com/alfarih31/nb-go-parser v1.0.1 h1:gHuiKly2yZd1XLh5K1XdcUK4/2MOBdvUjfJ7wImEjss=
+github.com/alfarih31/nb-go-parser v1.0.1/go.mod h1:0+2qf5oT5sEy4qyNxY/ewsREpHtUYfis3/bERolDFGI=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

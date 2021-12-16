@@ -1,7 +1,7 @@
 package cors
 
 import (
-	"github.com/alfarih31/nb-go-http/parser"
+	"github.com/alfarih31/nb-go-parser"
 	"net/http"
 )
 

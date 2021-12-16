@@ -2,7 +2,7 @@ package noob
 
 import (
 	"fmt"
-	"github.com/alfarih31/nb-go-http/parser"
+	"github.com/alfarih31/nb-go-parser"
 )
 
 type QueryParser HandlerCtx
