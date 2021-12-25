@@ -11,11 +11,11 @@ import (
 	"runtime/debug"
 )
 
-const DefaultErrCode = "_"
+const DefaultErrCode = 1
 
 type AppErr struct {
 	Err    error                     `json:"err"`
-	Code   string                    `json:"code"`
+	Code   uint                      `json:"code"`
 	Meta   interface{}               `json:"meta"`
 	Stack  []*gostackparse.Goroutine `json:"_stacks,omitempty"`
 	Frames *runtime.Frames           `json:"_frames,omitempty"`
@@ -65,10 +65,10 @@ func (msg *AppErr) Errors() interface{} {
 func (msg AppErr) Throw(message string, data ...interface{}) {
 	e := msg.Compose(message, data)
 
-	panic(&e)
+	panic(e)
 }
 
-func (msg AppErr) Compose(message string, data ...interface{}) AppErr {
+func (msg AppErr) Compose(message string, data ...interface{}) *AppErr {
 	e := msg
 	e.Stack = StackTrace()
 
@@ -78,7 +78,7 @@ func (msg AppErr) Compose(message string, data ...interface{}) AppErr {
 
 	e.Meta = data
 
-	return msg
+	return &e
 }
 
 func Throw(e *AppErr) {
