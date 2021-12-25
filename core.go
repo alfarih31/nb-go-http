@@ -20,7 +20,7 @@ type CoreCtx struct {
 	Logger    logger.Logger
 
 	Meta     keyvalue.KeyValue
-	Setup    func() // This function will be called when you call the Start of CoreCtx, hence you need to pass the Setup function or the application will be failed to start
+	Setup    func() error
 	Listener net.Listener
 
 	HTTPController
@@ -37,17 +37,25 @@ type StartArg struct {
 
 type CoreCfg struct {
 	Context        context.Context
-	Meta           *keyvalue.KeyValue
+	Meta           keyvalue.KeyValue
 	ResponseMapper *ResponseMapperCtx
 	Listener       net.Listener // Optional use net.Listener if want to start using *net.Listener
 }
 
-func (co *CoreCtx) boot() {
-	co.Setup()
+func (co *CoreCtx) boot() error {
+	if err := co.Setup(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Start will runt the Core & start serving the application
 func (co *CoreCtx) Start(cfg StartArg) {
+	var (
+		e error
+	)
+
 	common := CommonController{
 		Logger:    co.Logger.NewChild("CommonController"),
 		StartTime: time.Now(),
@@ -55,7 +63,7 @@ func (co *CoreCtx) Start(cfg StartArg) {
 
 	co.SetRouter(co.Provider.Router(cfg.Path))
 
-	co.Provider.Engine.NoRoute(co.AdaptHandlers([]HTTPHandler{common.RequestLogger(), common.HandleNotFound()})...)
+	co.Provider.Engine.NoRoute(co.chainHandlers([]HTTPHandler{common.RequestLogger(), common.HandleNotFound()}))
 
 	if cfg.Throttling != nil {
 		co.Handle("USE", common.Throttling(cfg.Throttling.MaxEventPerSec, cfg.Throttling.MaxEventPerSec))
@@ -69,7 +77,10 @@ func (co *CoreCtx) Start(cfg StartArg) {
 		}
 	}
 
-	co.boot()
+	e = co.boot()
+	if e != nil {
+		apperr.Throw(apperr.New("App failed to boot", e))
+	}
 
 	co.Handle("GET /", common.APIStatus(co.Meta))
 
@@ -77,10 +88,6 @@ func (co *CoreCtx) Start(cfg StartArg) {
 	if hostInfo == "" {
 		hostInfo = "http://localhost"
 	}
-
-	var (
-		e error
-	)
 
 	// If use listener then start using listener
 	if co.Listener != nil && cfg.UseListener {
@@ -107,9 +114,11 @@ func (co *CoreCtx) Start(cfg StartArg) {
 
 }
 
-func notImplemented(fname string) func() {
-	return func() {
+func notImplemented(fname string) func() error {
+	return func() error {
 		apperr.Throw(apperr.New(fmt.Sprintf("Core.%s Not Implemented", fname)))
+
+		return nil
 	}
 }
 
@@ -149,7 +158,7 @@ func New(config *CoreCfg) *CoreCtx {
 	c := &CoreCtx{
 		startTime:      time.Now(),
 		Provider:       p,
-		Meta:           *config.Meta,
+		Meta:           config.Meta,
 		Logger:         l,
 		Setup:          notImplemented("Setup"),
 		HTTPController: rc,
