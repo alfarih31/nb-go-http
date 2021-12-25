@@ -11,15 +11,15 @@ type Func struct {
 	Finally func()
 }
 
-func TCFunc(ru Func) {
-	if ru.Finally != nil {
-		defer ru.Finally()
+func TCFunc(run Func) {
+	if run.Finally != nil {
+		defer run.Finally()
 	}
 
 	defer func() {
 		if r := recover(); r != nil {
-			if ru.Catch != nil {
-				ru.Catch(r, apperr.GetRuntimeFrames(4))
+			if run.Catch != nil {
+				run.Catch(r, apperr.GetRuntimeFrames(4))
 				return
 			}
 
@@ -27,5 +27,5 @@ func TCFunc(ru Func) {
 		}
 	}()
 
-	ru.Try()
+	run.Try()
 }

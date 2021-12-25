@@ -34,49 +34,47 @@ func APIStatus(startTime time.Time, meta keyvalue.KeyValue) keyvalue.KeyValue {
 }
 
 func (cc CommonController) APIStatus(m keyvalue.KeyValue) HTTPHandler {
-	return func(c *HandlerCtx) *Response {
+	return func(c *HandlerCtx) (Response, error) {
 
-		return &Response{
+		return &DefaultResponse{
 			Body: struct {
 				Data interface{} `json:"data"`
 			}{
 				Data: APIStatus(cc.StartTime, m),
 			},
-		}
+		}, nil
 	}
 }
 
 func (cc CommonController) RequestLogger() HTTPHandler {
-	return func(c *HandlerCtx) *Response {
+	return func(c *HandlerCtx) (Response, error) {
 		start := time.Now()
 
-		c.Next()
+		defer func() {
+			cc.Logger.Debug(
+				fmt.Sprintf(
+					"%s - %s %s %d - %s",
+					c.ClientIP(), c.Request.Method, c.Request.URL.Path, c.Writer.Status(), time.Since(start)), map[string]interface{}{
+					"clientIp":     c.ClientIP(),
+					"method":       c.Request.Method,
+					"path":         c.Request.URL.Path,
+					"status":       c.Writer.Status(),
+					"responseTime": time.Since(start).String(),
+				})
+		}()
 
-		cc.Logger.Debug(
-			fmt.Sprintf(
-				"%s - %s %s %d - %s",
-				c.ClientIP(), c.Request.Method, c.Request.URL.Path, c.Writer.Status(), time.Since(start)), map[string]interface{}{
-				"clientIp":     c.ClientIP(),
-				"method":       c.Request.Method,
-				"path":         c.Request.URL.Path,
-				"status":       c.Writer.Status(),
-				"responseTime": time.Since(start).String(),
-			})
-		return nil
+		return c.Next()
 	}
 }
 
 func (cc CommonController) HandleNotFound() HTTPHandler {
-	return func(context *HandlerCtx) *Response {
+	return func(context *HandlerCtx) (Response, error) {
 		// Don't handle if http version > 1
 		if context.Request.ProtoMajor > 1 {
-			context.Next()
-
-			return nil
+			return context.Next()
 		}
 
-		HTTPError.NotFound.Throw("")
-		return nil
+		return nil, HTTPError.NotFound
 	}
 }
 
@@ -91,15 +89,11 @@ func (cc CommonController) Throttling(maxEventsPerSec int, maxBurstSize int) HTT
 
 	limiter := rate.NewLimiter(rate.Limit(maxEventsPerSec), maxBurstSize)
 
-	return func(context *HandlerCtx) *Response {
+	return func(context *HandlerCtx) (Response, error) {
 		if limiter.Allow() {
-			context.Next()
-
-			return nil
+			return context.Next()
 		}
 
-		HTTPError.TooManyRequest.Throw("")
-
-		return nil
+		return nil, HTTPError.TooManyRequest
 	}
 }

@@ -8,15 +8,13 @@ import (
 func CORS(config _cors.Cfg) HTTPHandler {
 	cors := _cors.New(config)
 
-	return func(c *HandlerCtx) *Response {
+	return func(c *HandlerCtx) (Response, error) {
 		cors.PutCORS(c.Writer)
 
 		if c.Request.Method == http.MethodOptions {
-			return &Response{}
+			return nil, nil
 		}
 
-		c.Next()
-
-		return nil
+		return c.Next()
 	}
 }

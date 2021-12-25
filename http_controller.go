@@ -1,7 +1,6 @@
 package noob
 
 import (
-	"errors"
 	"fmt"
 	"github.com/alfarih31/nb-go-http/app_err"
 	"github.com/alfarih31/nb-go-http/logger"
@@ -19,26 +18,28 @@ import (
 const abortIndex int8 = math.MaxInt8 / 2
 
 type HTTPControllerCtx struct {
+	logger.Logger
 	router         *Router
-	Logger         logger.Logger
 	ResponseMapper *ResponseMapperCtx
-	Debug          bool
+	IsDebug        bool
 }
 
 type HTTPController interface {
+	logger.Logger
 	SendError(c *HandlerCtx, e interface{}, frames *runtime.Frames)
-	SendSuccess(c *HandlerCtx, res *Response)
+	Send(c *HandlerCtx, res Response)
 	GetSpec(spec string) HandlerSpec
 	AdaptHandler(handler HTTPHandler) Handler
-	AdaptHandlers(handlers []HTTPHandler) []Handler
 	BranchRouter(path string) *Router
 	Handle(spec string, handlers ...HTTPHandler)
 	SetRouter(r *Router) *HTTPControllerCtx
+	chainHandlers(handlers []HTTPHandler) Handler
 }
 
 type ControllerArg struct {
 	Logger         logger.Logger
 	ResponseMapper *ResponseMapperCtx
+	Router         *Router
 }
 
 type HandlerSpec struct {
@@ -68,27 +69,25 @@ func (h *HTTPControllerCtx) AdaptHandler(handler HTTPHandler) Handler {
 		c := WrapHandlerCtx(ec)
 		tcf.TCFunc(tcf.Func{
 			Try: func() {
-				res := handler(c)
+				res, err := handler(c)
 
-				if res != nil {
-					h.SendSuccess(c, res)
+				if err != nil {
+					h.SendError(c, err, apperr.GetRuntimeFrames(3))
+					return
 				}
+
+				if res == nil {
+					return
+				}
+
+				h.Send(c, res)
 			},
 			Catch: func(e interface{}, frames *runtime.Frames) {
+				// Send Error
 				h.SendError(c, e, frames)
 			},
 		})
 	}
-}
-
-func (h *HTTPControllerCtx) AdaptHandlers(handlers []HTTPHandler) []Handler {
-	extHandlers := make([]Handler, len(handlers), len(handlers))
-
-	for i, handler := range handlers {
-		extHandlers[i] = h.AdaptHandler(handler)
-	}
-
-	return extHandlers
 }
 
 func (h *HTTPControllerCtx) BranchRouter(path string) *Router {
@@ -97,6 +96,16 @@ func (h *HTTPControllerCtx) BranchRouter(path string) *Router {
 	})
 
 	return h.router.Branch(path, fmt.Sprintf("%s%s", h.router.fullPath, path))
+}
+
+func (h *HTTPControllerCtx) chainHandlers(handlers []HTTPHandler) Handler {
+	return h.AdaptHandler(func(context *HandlerCtx) (Response, error) {
+		context.handlers = handlers
+
+		res, err := handlers[0](context)
+
+		return res, err
+	})
 }
 
 func (h *HTTPControllerCtx) Handle(spec string, handlers ...HTTPHandler) {
@@ -108,32 +117,37 @@ func (h *HTTPControllerCtx) Handle(spec string, handlers ...HTTPHandler) {
 
 	switch strings.ToUpper(handlerSpec.method) {
 	case "GET":
-		h.router.GET(handlerSpec.path, h.AdaptHandlers(handlers)...)
+		h.router.GET(handlerSpec.path, h.chainHandlers(handlers))
 	case "POST":
-		h.router.POST(handlerSpec.path, h.AdaptHandlers(handlers)...)
+		h.router.POST(handlerSpec.path, h.chainHandlers(handlers))
 	case "PUT":
-		h.router.PUT(handlerSpec.path, h.AdaptHandlers(handlers)...)
+		h.router.PUT(handlerSpec.path, h.chainHandlers(handlers))
 	case "DELETE":
-		h.router.DELETE(handlerSpec.path, h.AdaptHandlers(handlers)...)
+		h.router.DELETE(handlerSpec.path, h.chainHandlers(handlers))
 	case "OPTIONS":
-		h.router.OPTIONS(handlerSpec.path, h.AdaptHandlers(handlers)...)
+		h.router.OPTIONS(handlerSpec.path, h.chainHandlers(handlers))
 	case "HEAD":
-		h.router.HEAD(handlerSpec.path, h.AdaptHandlers(handlers)...)
+		h.router.HEAD(handlerSpec.path, h.chainHandlers(handlers))
 	case "PATCH":
-		h.router.PATCH(handlerSpec.path, h.AdaptHandlers(handlers)...)
+		h.router.PATCH(handlerSpec.path, h.chainHandlers(handlers))
 	case "USE":
-		h.router.USE(h.AdaptHandlers(handlers)...)
+		h.router.USE(h.chainHandlers(handlers))
 	default:
 		apperr.Throw(apperr.New(fmt.Sprintf("Unknown HTTP Handle Spec: %s", spec)))
 	}
 }
 
-func (h *HTTPControllerCtx) SendSuccess(c *HandlerCtx, res *Response) {
+func (h *HTTPControllerCtx) Send(c *HandlerCtx, res Response) {
+	// Default send success
 	r := h.ResponseMapper.GetSuccess()
 
-	r.ComposeTo(res)
+	// Compose success response to res
+	res.Compose(r)
 
-	_, rEr := c.response(res.Code, res.Body, res.Header)
+	// Set default header
+	h.ResponseMapper.AssignDefaultHeader(res)
+
+	_, rEr := c.response(res.GetCode(), res.GetBody(), res.GetHeader())
 
 	if rEr != nil {
 		h.Logger.Error("", map[string]interface{}{"_error": rEr})
@@ -151,7 +165,7 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}, frames *runt
 
 	switch er := e.(type) {
 	case *apperr.AppErr:
-		r = h.ResponseMapper.Get(er.Code, nil)
+		r = h.ResponseMapper.Get(er.Code)
 
 		// Put to Parsed Error
 		parsedErr.Err = er.Err
@@ -159,53 +173,40 @@ func (h *HTTPControllerCtx) SendError(c *HandlerCtx, e interface{}, frames *runt
 		parsedErr.Stack = er.Stack
 
 		// If not debug then delete stack from er
-		if !h.Debug {
+		if !h.IsDebug {
 			er.Stack = nil
 		}
-
-		if h.Debug {
-			r.ComposeBody(keyvalue.KeyValue{"_error": parsedErr.JSON()})
-		} else {
-			r.ComposeBody(keyvalue.KeyValue{"_error": parsedErr.Error()})
-		}
-	case Response:
-		r = er
-		parsedErr.Err = fmt.Errorf("%v", er.Body)
-	case *Response:
-		r = *er
-		parsedErr.Err = fmt.Errorf("%v", er.Body)
 	case error:
+		// Try assertion type to Response
+		cR, ok := er.(Response)
+		if ok {
+			r = cR
+		}
+
 		parsedErr.Err = er
-		if h.Debug {
-			r.ComposeBody(keyvalue.KeyValue{"_error": parsedErr.JSON()})
-		} else {
-			r.ComposeBody(keyvalue.KeyValue{"_error": parsedErr.Error()})
-		}
-	case string:
-		parsedErr.Err = errors.New(er)
-		if h.Debug {
-			r.ComposeBody(keyvalue.KeyValue{"_error": parsedErr.JSON()})
-		} else {
-			r.ComposeBody(keyvalue.KeyValue{"_error": parsedErr.Error()})
-		}
 	default:
 		parsedErr.Err = fmt.Errorf("%v", er)
-		if h.Debug {
-			r.ComposeBody(keyvalue.KeyValue{"_error": parsedErr.JSON()})
-		} else {
-			r.ComposeBody(keyvalue.KeyValue{"_error": parsedErr.Error()})
-		}
+	}
+
+	// If debug then compose to body
+	if h.IsDebug {
+		r.ComposeBody(keyvalue.KeyValue{"_error": parsedErr.JSON()})
+	} else {
+		r.ComposeBody(keyvalue.KeyValue{"_error": parsedErr.Error()})
 	}
 
 	// Stack Error to Context
 	c.StackError(parsedErr)
 
 	// If internal error than log error
-	if r.Code == http.StatusInternalServerError {
+	if r.GetCode() == http.StatusInternalServerError {
 		h.Logger.Error("", map[string]interface{}{"_error": parsedErr.JSON()})
 	}
 
-	_, rEr := c.responseError(r.Code, r.Body, r.Header)
+	// Set default header
+	h.ResponseMapper.AssignDefaultHeader(r)
+
+	_, rEr := c.responseError(r.GetCode(), r.GetBody(), r.GetHeader())
 
 	if rEr != nil {
 		h.Logger.Error("", map[string]interface{}{"_error": rEr})
@@ -231,7 +232,8 @@ func NewHTTPController(arg ControllerArg) HTTPController {
 	h := &HTTPControllerCtx{
 		Logger:         arg.Logger,
 		ResponseMapper: arg.ResponseMapper,
-		Debug:          isDebug,
+		IsDebug:        isDebug,
+		router:         arg.Router,
 	}
 
 	return h

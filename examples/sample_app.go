@@ -17,26 +17,16 @@ import (
 	"runtime/debug"
 )
 
-const (
-	Success            = "OK"
-	ErrorBadRequest    = "400"
-	ErrorNotFound      = "404"
-	ErrorInternal      = "500"
-	ErrorToManyRequest = "429"
-)
-
-type Response = noob.Response
-
 type Standard struct {
-	Success            Response
-	ErrorInternal      Response
-	ErrorBadRequest    Response
-	ErrorNotFound      Response
-	ErrorToManyRequest Response
+	Success            noob.Response
+	ErrorInternal      noob.Response
+	ErrorBadRequest    noob.Response
+	ErrorNotFound      noob.Response
+	ErrorToManyRequest noob.Response
 }
 
 var StandardResponses = Standard{
-	Success: Response{
+	Success: &noob.DefaultResponse{
 		Code: http.StatusOK,
 		Body: ResponseBody{
 			Status: ResponseStatus{
@@ -46,7 +36,7 @@ var StandardResponses = Standard{
 			},
 		},
 	},
-	ErrorBadRequest: Response{
+	ErrorBadRequest: &noob.DefaultResponse{
 		Code: http.StatusBadRequest,
 		Body: ResponseBody{
 			Status: ResponseStatus{
@@ -56,7 +46,7 @@ var StandardResponses = Standard{
 			},
 		},
 	},
-	ErrorNotFound: Response{
+	ErrorNotFound: &noob.DefaultResponse{
 		Code: http.StatusNotFound,
 		Body: ResponseBody{
 			Status: ResponseStatus{
@@ -66,7 +56,7 @@ var StandardResponses = Standard{
 			},
 		},
 	},
-	ErrorInternal: Response{
+	ErrorInternal: &noob.DefaultResponse{
 		Code: http.StatusInternalServerError,
 		Body: ResponseBody{
 			Status: ResponseStatus{
@@ -76,7 +66,7 @@ var StandardResponses = Standard{
 			},
 		},
 	},
-	ErrorToManyRequest: Response{
+	ErrorToManyRequest: &noob.DefaultResponse{
 		Code: http.StatusTooManyRequests,
 		Body: ResponseBody{
 			Status: ResponseStatus{
@@ -149,28 +139,18 @@ func main() {
 		Try: func() {
 			responseMapper := noob.ResponseMapper(noob.ResponseMapperCfg{
 				Logger: logger.New("ResponseMapper"),
-				DefaultCode: &noob.DefaultResponseCode{
-					InternalError: ErrorInternal,
-				},
-			})
-
-			responseMapper.Load(map[string]noob.Response{
-				Success:            StandardResponses.Success,
-				ErrorInternal:      StandardResponses.ErrorInternal,
-				ErrorBadRequest:    StandardResponses.ErrorBadRequest,
-				ErrorToManyRequest: StandardResponses.ErrorToManyRequest,
 			})
 
 			app := noob.New(&noob.CoreCfg{
 				ResponseMapper: responseMapper,
-				Meta: &keyvalue.KeyValue{
+				Meta: keyvalue.KeyValue{
 					"app_name":        "test",
 					"app_version":     "v0.1.0",
 					"app_description": "Description",
 				},
 			})
 
-			app.Setup = func() {
+			app.Setup = func() error {
 
 				g1 := noob.NewHTTPController(noob.ControllerArg{
 					Logger:         app.Logger.NewChild("G1-Controller"),
@@ -182,7 +162,7 @@ func main() {
 					ResponseMapper: responseMapper,
 				}).SetRouter(g1.BranchRouter("/deep"))
 
-				g1.Handle("GET /first-inner", func(c *noob.HandlerCtx) *noob.Response {
+				g1.Handle("GET /first-inner", func(c *noob.HandlerCtx) (noob.Response, error) {
 					qp := noob.QueryParser(*c)
 					q1, err := qp.GetInt("q1")
 					fmt.Println("q1", q1, err)
@@ -198,34 +178,33 @@ func main() {
 					})
 					fmt.Println("qreqWithDef", qReqWithDef, err)
 
-					return &noob.Response{
+					return &noob.DefaultResponse{
 						Body: ResponseBody{
 							Status: ResponseStatus{
 								MessageClient: "G1 FIRST",
 							},
 						},
-					}
+					}, nil
 				})
 
-				g1.Handle("GET /error", func(c *noob.HandlerCtx) *noob.Response {
+				g1.Handle("GET /error", func(c *noob.HandlerCtx) (noob.Response, error) {
 					panic("THIS IS AN ERROR")
-					return nil
 				})
 
-				g1.Handle("GET /second-inner", func(c *noob.HandlerCtx) *noob.Response {
+				g1.Handle("GET /second-inner", func(c *noob.HandlerCtx) (noob.Response, error) {
 					res := StandardResponses.Success
-					res.Body = ResponseBody{
+					res.SetBody(ResponseBody{
 						Status: ResponseStatus{
 							MessageClient: "G1 SECOND",
 						},
 						Data: "G1 SECOND DATA",
-					}
+					})
 
-					return &res
+					return res, nil
 				})
 
-				g2.Handle("GET /first-inner", func(context *noob.HandlerCtx) *noob.Response {
-					return &noob.Response{
+				g2.Handle("GET /first-inner", func(context *noob.HandlerCtx) (noob.Response, error) {
+					return &noob.DefaultResponse{
 						Body: ResponseBody{
 							Status: ResponseStatus{
 								MessageClient: "G2 FIRST",
@@ -234,10 +213,12 @@ func main() {
 								"1", "2", "3",
 							},
 						},
-					}
+					}, nil
 				})
 
 				app.Logger.Debug("Init Controllers OK...", nil)
+
+				return nil
 			}
 
 			app.Start(noob.StartArg{
