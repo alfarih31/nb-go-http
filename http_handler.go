@@ -2,6 +2,7 @@ package noob
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/alfarih31/nb-go-http/app_err"
 	"github.com/gin-gonic/gin"
@@ -12,13 +13,22 @@ type Errors []*apperr.AppErr
 
 const extKeyErrors = "_errors"
 
+var errResponseAlreadyAborted = errors.New("response already aborted")
+
 type HandlerCtx struct {
 	*gin.Context
+	handlers   []HTTPHandler
+	handlerIdx int
 }
 
-type HTTPHandler func(context *HandlerCtx) *Response
+type HTTPHandler func(context *HandlerCtx) (Response, error)
 
-func (c *HandlerCtx) response(status int, body interface{}, headers map[string]string) (int, error) {
+func (c *HandlerCtx) response(status uint, body interface{}, headers map[string]string) (int, error) {
+	// return if already closed
+	if c.IsAborted() {
+		return 0, errResponseAlreadyAborted
+	}
+
 	if headers != nil {
 		for key, head := range headers {
 			c.Writer.Header().Set(key, head)
@@ -30,7 +40,7 @@ func (c *HandlerCtx) response(status int, body interface{}, headers map[string]s
 		status = 500
 	}
 
-	c.Writer.WriteHeader(status)
+	c.Writer.WriteHeader(int(status))
 
 	j, e := json.Marshal(body)
 
@@ -50,12 +60,32 @@ func (c *HandlerCtx) StackError(e *apperr.AppErr) {
 	c.Keys[extKeyErrors] = append(c.Keys[extKeyErrors].(Errors), e)
 }
 
-func (c *HandlerCtx) responseError(status int, e interface{}, headers map[string]string) (int, error) {
+func (c *HandlerCtx) responseError(status uint, e interface{}, headers map[string]string) (int, error) {
 	return c.response(status, e, headers)
 }
 
 func (c *HandlerCtx) Errors() Errors {
 	return c.Keys[extKeyErrors].(Errors)
+}
+
+func (c *HandlerCtx) GetNext() HTTPHandler {
+	c.handlerIdx++
+
+	if c.handlerIdx == len(c.handlers) {
+		return nil
+	}
+
+	return c.handlers[c.handlerIdx]
+}
+
+func (c *HandlerCtx) Next() (Response, error) {
+	h := c.GetNext()
+
+	if h == nil {
+		return nil, nil
+	}
+
+	return h(c)
 }
 
 func WrapHandlerCtx(ec *gin.Context) *HandlerCtx {
