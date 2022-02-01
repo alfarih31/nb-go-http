@@ -1,32 +1,60 @@
 package noob
 
 import (
-	"github.com/alfarih31/nb-go-keyvalue"
+	keyvalue "github.com/alfarih31/nb-go-keyvalue"
+	parser "github.com/alfarih31/nb-go-parser"
 )
+
+type ResponseMap map[HTTPStatusCode]Response
 
 type Response interface {
 	Compose(sourceRes Response, replaceExist ...bool) Response
-	ComposeBody(body interface{}, replaceExist ...bool) Response
-	GetBody() interface{}
-	SetBody(b interface{}) Response
-	GetHeader() map[string]string
-	SetHeader(h map[string]string) Response
-	GetCode() uint
-	SetCode(c uint) Response
+	ComposeBody(body ResponseBody, replaceExist ...bool) Response
+	ComposeHeader(h ResponseHeader, replaceExist ...bool) Response
+	GetBody() *ResponseBody
+	GetHeader() *ResponseHeader
+	GetCode() *HTTPStatusCode
 	Copy() Response
 }
 
-type DefaultResponse struct {
-	Code   uint
-	Header map[string]string
-	Body   interface{}
+type ResponseHeader map[string]string
+
+func (r ResponseHeader) Copy() *ResponseHeader {
+	nh := ResponseHeader{}
+	for k, v := range r {
+		nh[k] = v
+	}
+
+	return &nh
 }
 
-func (r *DefaultResponse) GetBody() interface{} {
+type ResponseBody struct {
+	Code    uint        `json:"code,omitempty"`
+	Message string      `json:"message,omitempty"`
+	Data    interface{} `json:"data,omitempty"`
+	Errors  interface{} `json:"_error,omitempty"`
+}
+
+func (b ResponseBody) Copy() *ResponseBody {
+	return &ResponseBody{
+		Code:    b.Code,
+		Message: b.Message,
+		Data:    b.Data,
+		Errors:  b.Errors,
+	}
+}
+
+type response struct {
+	Code   *HTTPStatusCode
+	Header *ResponseHeader
+	Body   *ResponseBody
+}
+
+func (r *response) GetBody() *ResponseBody {
 	return r.Body
 }
 
-func (r *DefaultResponse) GetHeader() map[string]string {
+func (r *response) GetHeader() *ResponseHeader {
 	if r.Header == nil {
 		return nil
 	}
@@ -34,84 +62,70 @@ func (r *DefaultResponse) GetHeader() map[string]string {
 	return r.Header
 }
 
-func (r *DefaultResponse) GetCode() uint {
+func (r *response) GetCode() *HTTPStatusCode {
 	return r.Code
 }
 
-func (r *DefaultResponse) SetBody(b interface{}) Response {
-	r.Body = b
+func (r *response) Compose(sourceRes Response, replaceExist ...bool) Response {
+	rExist := parser.GetOptBoolArg(replaceExist)
 
-	return r
-}
+	r.ComposeBody(*sourceRes.GetBody(), rExist)
 
-func (r *DefaultResponse) SetHeader(h map[string]string) Response {
-	r.Header = h
-	return r
-}
+	r.ComposeHeader(*sourceRes.GetHeader(), rExist)
 
-func (r *DefaultResponse) SetCode(c uint) Response {
-	r.Code = c
-
-	return r
-}
-
-func (r *DefaultResponse) Compose(sourceRes Response, replaceExist ...bool) Response {
-	rExist := false
-	if len(replaceExist) > 0 {
-		rExist = replaceExist[0]
-	}
-
-	if sourceRes.GetHeader() != nil {
-		if !rExist && r.GetHeader() == nil {
-			r.SetHeader(sourceRes.GetHeader())
-		} else {
-			r.SetHeader(sourceRes.GetHeader())
-		}
-	}
-
-	r.ComposeBody(sourceRes.GetBody(), rExist)
-
-	if sourceRes.GetCode() != 0 {
-		if !rExist && r.GetCode() == 0 {
-			r.SetCode(sourceRes.GetCode())
-		} else {
-			r.SetCode(sourceRes.GetCode())
+	if rExist {
+		c := r.GetCode()
+		*c = *sourceRes.GetCode()
+	} else {
+		if sourceRes.GetCode() != nil && r.GetCode() == nil {
+			c := r.GetCode()
+			*c = *sourceRes.GetCode()
 		}
 	}
 
 	return r
 }
 
-func (r *DefaultResponse) Copy() Response {
-	return &DefaultResponse{
-		Code:   r.GetCode(),
-		Header: r.GetHeader(),
-		Body:   r.GetBody(),
+func (r *response) ComposeHeader(h ResponseHeader, replaceExist ...bool) Response {
+	rExist := parser.GetOptBoolArg(replaceExist)
+	ch := *r.Header
+	for k, v := range h {
+		_, exist := ch[k]
+		if exist && rExist {
+			ch[k] = v
+			continue
+		}
+
+		ch[k] = v
+	}
+
+	r.Header = &ch
+
+	return r
+}
+
+func (r *response) Copy() Response {
+	return &response{
+		Code:   r.GetCode().Copy(),
+		Header: r.GetHeader().Copy(),
+		Body:   r.GetBody().Copy(),
 	}
 }
 
-func (r *DefaultResponse) ComposeBody(body interface{}, replaceExist ...bool) Response {
-	rExist := false
-	if len(replaceExist) > 0 {
-		rExist = replaceExist[0]
-	}
-
-	if body == nil {
-		return r
-	}
+func (r *response) ComposeBody(body ResponseBody, replaceExist ...bool) Response {
+	rExist := parser.GetOptBoolArg(replaceExist)
 
 	tBody := r.GetBody()
-	if tBody == nil {
-		return r
-	}
 
 	sourceBody, err := keyvalue.FromStruct(body)
 	if err != nil {
+		logR.Error(err)
 		return r
 	}
 
 	targetBody, err := keyvalue.FromStruct(tBody)
 	if err != nil {
+		logR.Error(err)
 		return r
 	}
 
@@ -119,7 +133,22 @@ func (r *DefaultResponse) ComposeBody(body interface{}, replaceExist ...bool) Re
 
 	err = targetBody.Unmarshal(&tBody)
 	if err != nil {
+		logR.Error(err)
 		return r
 	}
-	return r.SetBody(tBody)
+
+	return r
+}
+
+func NewResponse(code HTTPStatusCode, body ResponseBody, header ...ResponseHeader) Response {
+	h := ResponseHeader{}
+	if len(header) > 0 {
+		h = header[0]
+	}
+
+	return &response{
+		Code:   &code,
+		Body:   &body,
+		Header: &h,
+	}
 }

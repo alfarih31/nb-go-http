@@ -2,12 +2,30 @@ package noob
 
 import (
 	"fmt"
+	keyvalue "github.com/alfarih31/nb-go-keyvalue"
 	"github.com/alfarih31/nb-go-parser"
 )
 
 type QueryParser HandlerCtx
 
 type QueryParserOption struct {
+	Default  interface{}
+	Required bool
+}
+
+type QueryValueType uint
+
+const (
+	QueryValueTypeString QueryValueType = iota
+	QueryValueTypeBool
+	QueryValueTypeInt
+	QueryValueTypeInt32
+	QueryValueTypeInt64
+)
+
+type Query struct {
+	Key      string
+	Type     QueryValueType
 	Default  interface{}
 	Required bool
 }
@@ -25,6 +43,48 @@ func getOptions(key string, opt []QueryParserOption) (interface{}, error) {
 	}
 
 	return nil, nil
+}
+
+func (p QueryParser) GetQueries(target interface{}, qs []Query) error {
+	kv := keyvalue.KeyValue{}
+	for _, q := range qs {
+		switch q.Type {
+		case QueryValueTypeString:
+			v, err := p.GetString(q.Key, QueryParserOption{Default: q.Default, Required: q.Required})
+			if err != nil {
+				return err
+			}
+			kv[q.Key] = v
+		case QueryValueTypeBool:
+			v, err := p.GetBool(q.Key, QueryParserOption{Default: q.Default, Required: q.Required})
+			if err != nil {
+				return err
+			}
+			kv[q.Key] = v
+		case QueryValueTypeInt:
+			v, err := p.GetInt(q.Key, QueryParserOption{Default: q.Default, Required: q.Required})
+			if err != nil {
+				return err
+			}
+			kv[q.Key] = v
+		case QueryValueTypeInt32:
+			v, err := p.GetInt32(q.Key, QueryParserOption{Default: q.Default, Required: q.Required})
+			if err != nil {
+				return err
+			}
+			kv[q.Key] = v
+		case QueryValueTypeInt64:
+			v, err := p.GetInt64(q.Key, QueryParserOption{Default: q.Default, Required: q.Required})
+			if err != nil {
+				return err
+			}
+			kv[q.Key] = v
+		default:
+			Log.Warn(fmt.Sprintf("Unknown QueryValueType, Key=%s, Type=%d", q.Key, q.Type))
+		}
+	}
+
+	return kv.Unmarshal(target)
 }
 
 func (p QueryParser) GetString(key string, opt ...QueryParserOption) (*string, error) {

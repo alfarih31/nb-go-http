@@ -1,7 +1,6 @@
-package tcf
+package noob
 
 import (
-	apperr "github.com/alfarih31/nb-go-http/app_err"
 	"runtime"
 )
 
@@ -19,7 +18,7 @@ func TCFunc(run Func) {
 	defer func() {
 		if r := recover(); r != nil {
 			if run.Catch != nil {
-				run.Catch(r, apperr.GetRuntimeFrames(4))
+				run.Catch(r, GetRuntimeFrames(4))
 				return
 			}
 

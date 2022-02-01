@@ -1,4 +1,4 @@
-package types
+package utils
 
 import "reflect"
 
@@ -22,4 +22,8 @@ func IsTypeEqual(v1 interface{}, v2 interface{}) bool {
 	}
 
 	return true
+}
+
+func IsInterfaceNil(i interface{}) bool {
+	return i == nil || (reflect.ValueOf(i).Kind() == reflect.Ptr && reflect.ValueOf(i).IsNil())
 }

@@ -1,12 +1,7 @@
 package noob
 
 import (
-	"context"
 	"fmt"
-	"github.com/alfarih31/nb-go-http/app_err"
-	"github.com/alfarih31/nb-go-http/cors"
-	"github.com/alfarih31/nb-go-http/logger"
-	"github.com/alfarih31/nb-go-keyvalue"
 	"github.com/alfarih31/nb-go-parser"
 	"github.com/gin-gonic/gin"
 	"net"
@@ -14,85 +9,44 @@ import (
 	"time"
 )
 
-type CoreCtx struct {
+type Ctx struct {
 	startTime time.Time
 	Provider  *HTTPProviderCtx
-	Logger    logger.Logger
 
-	Meta     keyvalue.KeyValue
-	Setup    func() error
 	Listener net.Listener
-
-	HTTPController
+	*Router
 }
 
-type StartArg struct {
-	Host        string
-	Port        int
-	Path        string
-	CORS        *cors.Cfg
-	Throttling  *ThrottlingCfg
-	UseListener bool
-}
-
-type CoreCfg struct {
-	Context        context.Context
-	Meta           keyvalue.KeyValue
-	ResponseMapper *ResponseMapperCtx
-	Listener       net.Listener // Optional use net.Listener if want to start using *net.Listener
-}
-
-func (co *CoreCtx) boot() error {
-	if err := co.Setup(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Start will runt the Core & start serving the application
-func (co *CoreCtx) Start(cfg StartArg) {
+// Start will run the Core & start serving the application
+func (co *Ctx) Start() error {
 	var (
 		e error
 	)
 
-	common := CommonController{
-		Logger:    co.Logger.NewChild("CommonController"),
-		StartTime: time.Now(),
-	}
+	cfg := DefaultCfg
 
-	co.SetRouter(co.Provider.Router(cfg.Path))
+	crs := new(cors)
 
-	co.Provider.Engine.NoRoute(co.chainHandlers([]HTTPHandler{common.RequestLogger(), common.HandleNotFound()}))
+	// Prepare handlers for no route
+	middlewares := []HandlerFunc{handleRequestLogger(Log), crs.HandleCORS, HandleThrottling(), HandleTimeout}
 
-	if cfg.Throttling != nil {
-		co.Handle("USE", common.Throttling(cfg.Throttling.MaxEventPerSec, cfg.Throttling.MaxEventPerSec))
-	}
+	co.USE(middlewares...)
+	// Handle root
+	co.GET("/", HandleAPIStatus)
 
-	co.Handle("USE", common.RequestLogger())
-
-	if cfg.CORS != nil {
-		if cfg.CORS.Enable {
-			co.Handle("USE", CORS(*cfg.CORS))
-		}
-	}
-
-	e = co.boot()
-	if e != nil {
-		apperr.Throw(apperr.New("App failed to boot", e))
-	}
-
-	co.Handle("GET /", common.APIStatus(co.Meta))
+	// handler for not found page
+	middlewares = append(middlewares, HandleNotFound)
+	co.Provider.Engine.NoRoute(NewHandlerChain(middlewares).compact())
 
 	hostInfo := cfg.Host
 	if hostInfo == "" {
 		hostInfo = "http://localhost"
 	}
 
-	// If use listener then start using listener
+	// use listener if listener not nil
 	if co.Listener != nil && cfg.UseListener {
 		url := fmt.Sprintf("%s%s", co.Listener.Addr().String(), cfg.Path)
-		co.Logger.Info(fmt.Sprintf("TimeToBoot = %s Running: Address = '%s'", time.Since(co.startTime).String(), url), map[string]interface{}{
+		Log.Info(fmt.Sprintf("TimeToBoot = %s Running: Address = '%s'", time.Since(co.startTime).String(), url), map[string]interface{}{
 			"address": url,
 		})
 
@@ -100,49 +54,28 @@ func (co *CoreCtx) Start(cfg StartArg) {
 	} else {
 		baseUrlInfo := fmt.Sprintf("%s:%d", hostInfo, cfg.Port)
 		url := fmt.Sprintf("%s%s", baseUrlInfo, cfg.Path)
-		co.Logger.Info(fmt.Sprintf("TimeToBoot = %s Running: Url = '%s'", time.Since(co.startTime).String(), url), map[string]interface{}{
+		Log.Info(fmt.Sprintf("TimeToBoot = %s Running: Url = '%s'", time.Since(co.startTime).String(), url), map[string]interface{}{
 			"url": url,
 		})
 
 		e = co.Provider.Run(fmt.Sprintf("%s:%d", cfg.Host, cfg.Port))
 	}
 
-	if e != nil {
-		co.Logger.Error("Failed to start, error happened!", map[string]interface{}{"_error": e})
-		return
-	}
-
+	return e
 }
 
 func notImplemented(fname string) func() error {
 	return func() error {
-		apperr.Throw(apperr.New(fmt.Sprintf("Core.%s Not Implemented", fname)))
+		panic(NewCoreError(fmt.Sprintf("Core.%s not implemented", fname)))
 
 		return nil
 	}
 }
 
-func validateCoreConfig(config *CoreCfg) {
-	if config == nil {
-		apperr.Throw(apperr.New("Core config cannot be nil"))
-	}
-
-	if config.Meta == nil {
-		apperr.Throw(apperr.New("Core config.Meta cannot be nil"))
-	}
-
-	if config.ResponseMapper == nil {
-		apperr.Throw(apperr.New("Core config.ResponseMapper cannot be nil"))
-	}
-}
-
 // New return Core context, used as core of the application
-func New(config *CoreCfg) *CoreCtx {
-	isDebug, _ := parser.String(os.Getenv("DEBUG")).ToBool()
-
-	validateCoreConfig(config)
-
-	l := logger.New("Core")
+func New(listener ...net.Listener) *Ctx {
+	// Load isDebug
+	isDebug, _ = parser.String(os.Getenv("DEBUG")).ToBool()
 
 	if !isDebug {
 		gin.SetMode(gin.ReleaseMode)
@@ -150,19 +83,18 @@ func New(config *CoreCfg) *CoreCtx {
 
 	p := HTTP()
 
-	rc := NewHTTPController(ControllerArg{
-		Logger:         l.NewChild("RootController"),
-		ResponseMapper: config.ResponseMapper,
-	})
+	r := p.Router(DefaultCfg.Path)
 
-	c := &CoreCtx{
-		startTime:      time.Now(),
-		Provider:       p,
-		Meta:           config.Meta,
-		Logger:         l,
-		Setup:          notImplemented("Setup"),
-		HTTPController: rc,
-		Listener:       config.Listener,
+	var lis net.Listener
+	if len(listener) > 0 {
+		lis = listener[0]
+	}
+
+	c := &Ctx{
+		startTime: time.Now(),
+		Provider:  p,
+		Listener:  lis,
+		Router:    r,
 	}
 
 	return c

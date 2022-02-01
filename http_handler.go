@@ -4,29 +4,108 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/alfarih31/nb-go-http/app_err"
+	"github.com/alfarih31/nb-go-http/utils"
 	"github.com/gin-gonic/gin"
-	"strings"
+	"runtime"
 )
-
-type Errors []*apperr.AppErr
 
 const extKeyErrors = "_errors"
 
 var errResponseAlreadyAborted = errors.New("response already aborted")
 
-type HandlerCtx struct {
-	*gin.Context
-	handlers   []HTTPHandler
-	handlerIdx int
+// Handler is custom type to wrap HandlerFunc, so we can give a name to them
+type Handler struct {
+	fn   HandlerFunc // fn
+	name string      // name of the handler
 }
 
-type HTTPHandler func(context *HandlerCtx) (Response, error)
+// String return name of the handler. So fmt.Print of a handler will return its name
+func (h Handler) String() string {
+	if h.name == "" {
+		return utils.GetFunctionName(h.fn)
+	}
 
-func (c *HandlerCtx) response(status uint, body interface{}, headers map[string]string) (int, error) {
+	return h.name
+}
+
+// HandlerChain is type for slice of Handler
+type HandlerChain []Handler
+
+// Strings return list name of each handler
+func (hc HandlerChain) Strings() []string {
+	o := make([]string, len(hc))
+	for i, h := range hc {
+		o[i] = h.String()
+	}
+
+	return o
+}
+
+func (hc HandlerChain) String() string {
+	out := ""
+	for i, h := range hc {
+		out += fmt.Sprintf("%d. %s\n", i+1, h)
+	}
+
+	return out
+}
+
+// compact return provider handler chain by compacting all handler to a single gin.HandlerFunc (gin.HandlerFunc)
+func (hc HandlerChain) compact() gin.HandlerFunc {
+	h := NewHandler(func(c *HandlerCtx) (Response, error) {
+		c.setHandlers(hc)
+
+		return c.Next()
+	})
+
+	return func(ec *gin.Context) {
+		c := WrapHandlerCtx(ec)
+		TCFunc(Func{
+			Try: func() {
+				res, err := h.fn(c)
+
+				// Get response from err
+				if err != nil {
+					c.SendError(err, GetRuntimeFrames(3))
+					return
+				}
+
+				if res != nil {
+					c.Send(res)
+					return
+				}
+			},
+			Catch: func(err interface{}, frames *runtime.Frames) {
+				// Send Error
+				Log.Warn("error caught! don't panic, use return error instead", map[string]interface{}{"_error": err})
+
+				c.SendError(err, frames)
+			},
+		})
+	}
+}
+
+type HandlerCtx struct {
+	*gin.Context
+	handlerIdx  int
+	handlers    HandlerChain
+	nextAborted bool
+}
+
+type HandlerFunc func(context *HandlerCtx) (Response, error)
+
+func (c *HandlerCtx) response(status HTTPStatusCode, body interface{}, headers map[string]string) error {
 	// return if already closed
+	if c.nextAborted {
+		return nil
+	}
+
 	if c.IsAborted() {
-		return 0, errResponseAlreadyAborted
+		return errResponseAlreadyAborted
+	}
+
+	for key, val := range DefaultResponseHeader {
+		c.Writer.Header().Set(key, val)
 	}
 
 	if headers != nil {
@@ -45,37 +124,39 @@ func (c *HandlerCtx) response(status uint, body interface{}, headers map[string]
 	j, e := json.Marshal(body)
 
 	if e != nil {
-		return 0, e
+		return e
 	}
 
-	i, e := c.Writer.WriteString(string(j))
+	_, e = c.Writer.WriteString(string(j))
 
 	// Prevent write to response
 	c.Abort()
 
-	return i, e
+	return e
 }
 
-func (c *HandlerCtx) StackError(e *apperr.AppErr) {
+func (c *HandlerCtx) StackError(e *CoreError) {
 	c.Keys[extKeyErrors] = append(c.Keys[extKeyErrors].(Errors), e)
-}
-
-func (c *HandlerCtx) responseError(status uint, e interface{}, headers map[string]string) (int, error) {
-	return c.response(status, e, headers)
 }
 
 func (c *HandlerCtx) Errors() Errors {
 	return c.Keys[extKeyErrors].(Errors)
 }
 
-func (c *HandlerCtx) GetNext() HTTPHandler {
-	c.handlerIdx++
+func (c *HandlerCtx) setHandlers(handlers HandlerChain) {
+	c.handlers = handlers
+}
 
-	if c.handlerIdx == len(c.handlers) {
+func (c *HandlerCtx) GetNext() HandlerFunc {
+	if c.handlerIdx >= len(c.handlers) || c.nextAborted {
+		c.Context.Next()
+
 		return nil
 	}
 
-	return c.handlers[c.handlerIdx]
+	h := c.handlers[c.handlerIdx]
+	c.handlerIdx++
+	return h.fn
 }
 
 func (c *HandlerCtx) Next() (Response, error) {
@@ -85,34 +166,110 @@ func (c *HandlerCtx) Next() (Response, error) {
 		return nil, nil
 	}
 
-	return h(c)
+	res, err := h(c)
+
+	if err != nil {
+		c.SendError(err, GetRuntimeFrames(3))
+		c.nextAborted = true
+		return nil, err
+	}
+
+	if res != nil {
+		c.Send(res)
+		c.nextAborted = true
+		return res, nil
+	}
+
+	return nil, nil
+}
+
+func (c *HandlerCtx) Copy() *HandlerCtx {
+	return WrapHandlerCtx(c.Context.Copy())
+}
+
+func (c *HandlerCtx) Send(res Response) {
+	// Default send success
+	r := DefaultSuccessResponse
+
+	// Compose success response to res
+	res.Compose(r)
+
+	rEr := c.response(*res.GetCode(), *res.GetBody(), *res.GetHeader())
+
+	if rEr != nil {
+		logR.Error("send response error", map[string]interface{}{"_error": rEr})
+	}
+}
+
+func (c *HandlerCtx) SendError(e interface{}, frames *runtime.Frames) {
+	r := DefaultInternalServerErrorResponse
+
+	// Build Error
+	parsedErr := &CoreError{
+		Stack:  StackTrace(),
+		Frames: frames,
+	}
+
+	switch er := e.(type) {
+	case ResponseError:
+		r = er
+		parsedErr.Err = er
+	case error:
+		// Try assertion type to Response
+		cR, ok := er.(ResponseError)
+		if ok {
+			r = cR
+		}
+
+		parsedErr.Err = er
+	default:
+		parsedErr.Err = fmt.Errorf("%v", er)
+	}
+
+	// If debug then compose to body
+	if isDebug {
+		r.ComposeBody(ResponseBody{
+			Errors: parsedErr.JSON(),
+		})
+	} else {
+		r.ComposeBody(ResponseBody{
+			Errors: parsedErr.Error(),
+		})
+	}
+
+	// Stack Error to Context
+	c.StackError(parsedErr)
+
+	rEr := c.response(*r.GetCode(), *r.GetBody(), *r.GetHeader())
+
+	if rEr != nil {
+		logR.Error("send response error", map[string]interface{}{"_error": rEr})
+	}
 }
 
 func WrapHandlerCtx(ec *gin.Context) *HandlerCtx {
-	ec.Keys = map[string]interface{}{
-		extKeyErrors: Errors{},
+	if ec.Keys == nil {
+		ec.Keys = map[string]interface{}{}
 	}
+	ec.Keys[extKeyErrors] = Errors{}
+
 	return &HandlerCtx{
 		Context: ec,
 	}
 }
 
-func (e Errors) MarshalJSON() ([]byte, error) {
-	jsonData := make([]interface{}, len(e))
-	for i, er := range e {
-		jsonData[i] = er.JSON()
+func NewHandler(handler HandlerFunc) Handler {
+	return Handler{
+		name: utils.GetFunctionName(handler),
+		fn:   handler,
 	}
-
-	return json.Marshal(jsonData)
 }
 
-func (e Errors) String() string {
-	if len(e) == 0 {
-		return ""
+func NewHandlerChain(handlers []HandlerFunc) HandlerChain {
+	hs := make([]Handler, len(handlers))
+	for i, hnd := range handlers {
+		hs[i] = NewHandler(hnd)
 	}
-	var buffer strings.Builder
-	for i, msg := range e {
-		fmt.Fprintf(&buffer, "Error #%02d: %v\n", i+1, msg)
-	}
-	return buffer.String()
+
+	return hs
 }

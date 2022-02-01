@@ -1,19 +1,21 @@
-package apperr
+package noob
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/DataDog/gostackparse"
 	"github.com/alfarih31/nb-go-keyvalue"
 	"reflect"
 	"runtime"
 	"runtime/debug"
+	"strings"
 )
 
 const DefaultErrCode = 1
 
-type AppErr struct {
+type CoreError struct {
 	Err    error                     `json:"err"`
 	Code   uint                      `json:"code"`
 	Meta   interface{}               `json:"meta"`
@@ -38,15 +40,14 @@ func GetRuntimeFrames(skip int) *runtime.Frames {
 
 func StackTrace() []*gostackparse.Goroutine {
 	stacks, _ := gostackparse.Parse(bytes.NewReader(debug.Stack()))
-
 	return stacks
 }
 
-func (msg *AppErr) Trace() {
+func (msg *CoreError) Trace() {
 	msg.Stack = StackTrace()
 }
 
-func (msg AppErr) StackTrace() *runtime.Frames {
+func (msg CoreError) StackTrace() *runtime.Frames {
 	if msg.Frames != nil {
 		return msg.Frames
 	}
@@ -54,21 +55,15 @@ func (msg AppErr) StackTrace() *runtime.Frames {
 	return GetRuntimeFrames(3)
 }
 
-func (msg *AppErr) Error() string {
+func (msg *CoreError) Error() string {
 	return msg.Err.Error()
 }
 
-func (msg *AppErr) Errors() interface{} {
+func (msg *CoreError) Errors() interface{} {
 	return msg.Err
 }
 
-func (msg AppErr) Throw(message string, data ...interface{}) {
-	e := msg.Compose(message, data)
-
-	panic(e)
-}
-
-func (msg AppErr) Compose(message string, data ...interface{}) *AppErr {
+func (msg CoreError) Compose(message string, data ...interface{}) *CoreError {
 	e := msg
 	e.Stack = StackTrace()
 
@@ -81,14 +76,8 @@ func (msg AppErr) Compose(message string, data ...interface{}) *AppErr {
 	return &e
 }
 
-func Throw(e *AppErr) {
-	e.Stack = StackTrace()
-
-	panic(e)
-}
-
-func New(msg string, meta ...interface{}) *AppErr {
-	e := &AppErr{
+func NewCoreError(msg string, meta ...interface{}) *CoreError {
+	e := &CoreError{
 		Err:  errors.New(msg),
 		Code: DefaultErrCode,
 		Meta: meta,
@@ -97,7 +86,7 @@ func New(msg string, meta ...interface{}) *AppErr {
 	return e
 }
 
-func (msg *AppErr) JSON() interface{} {
+func (msg *CoreError) JSON() interface{} {
 	jsonData := keyvalue.KeyValue{}
 	if msg.Meta != nil {
 		value := reflect.ValueOf(msg.Meta)
@@ -121,6 +110,28 @@ func (msg *AppErr) JSON() interface{} {
 	return jsonData
 }
 
-func (msg AppErr) MarshalJSON() ([]byte, error) {
+func (msg CoreError) MarshalJSON() ([]byte, error) {
 	return json.Marshal(msg.JSON())
+}
+
+type Errors []*CoreError
+
+func (e Errors) MarshalJSON() ([]byte, error) {
+	jsonData := make([]interface{}, len(e))
+	for i, er := range e {
+		jsonData[i] = er.JSON()
+	}
+
+	return json.Marshal(jsonData)
+}
+
+func (e Errors) String() string {
+	if len(e) == 0 {
+		return ""
+	}
+	var buffer strings.Builder
+	for i, msg := range e {
+		fmt.Fprintf(&buffer, "Error #%02d: %v\n", i+1, msg)
+	}
+	return buffer.String()
 }

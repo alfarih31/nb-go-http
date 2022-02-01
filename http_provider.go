@@ -5,92 +5,46 @@ import (
 	"net"
 )
 
-type Handler = gin.HandlerFunc
-type Router struct {
-	path     string
-	fullPath string
-	router   *gin.RouterGroup
-}
-
-func (e *Router) Handlers() []Handler {
-	return e.router.Handlers
-}
-
-func (e *Router) AppendHandlers(handlers []Handler) {
-	finalSize := len(e.router.Handlers) + len(handlers)
-	if finalSize >= int(abortIndex) {
-		panic("too many handlers")
-	}
-	mergedHandlers := make([]Handler, finalSize)
-	copy(mergedHandlers, e.router.Handlers)
-	copy(mergedHandlers[len(e.router.Handlers):], handlers)
-
-	e.router.Handlers = mergedHandlers
-}
-
-func (e *Router) Branch(path string, fullPath string) *Router {
-	return &Router{
-		path:     path,
-		fullPath: fullPath,
-		router:   e.router.Group(path),
-	}
-}
-
-func (e *Router) GET(path string, handlers ...Handler) {
-	e.router.GET(path, handlers...)
-}
-
-func (e *Router) POST(path string, handlers ...Handler) {
-	e.router.POST(path, handlers...)
-}
-
-func (e *Router) PUT(path string, handlers ...Handler) {
-	e.router.PUT(path, handlers...)
-}
-
-func (e *Router) DELETE(path string, handlers ...Handler) {
-	e.router.DELETE(path, handlers...)
-}
-
-func (e *Router) PATCH(path string, handlers ...Handler) {
-	e.router.PATCH(path, handlers...)
-}
-
-func (e *Router) OPTIONS(path string, handlers ...Handler) {
-	e.router.OPTIONS(path, handlers...)
-}
-
-func (e *Router) HEAD(path string, handlers ...Handler) {
-	e.router.HEAD(path, handlers...)
-}
-
-func (e *Router) USE(handlers ...Handler) {
-	e.router.Use(handlers...)
-}
-
 type HTTPProviderCtx struct {
-	Engine *gin.Engine
+	Engine     *gin.Engine
+	rootRouter *Router
 }
 
-func (t HTTPProviderCtx) Router(path string) *Router {
-	return &Router{
-		path:     path,
-		fullPath: path,
-		router:   t.Engine.Group(path),
+func (t *HTTPProviderCtx) Router(path string) *Router {
+	if path == "/" {
+		return t.rootRouter
 	}
+
+	return t.rootRouter.Branch(path)
 }
 
-func (t HTTPProviderCtx) Run(url string) error {
-	return t.Engine.Run(url)
+func (t *HTTPProviderCtx) preRun() error {
+	baseRouter := t.Engine.Group(t.rootRouter.basePath)
+	if err := t.rootRouter.boot(baseRouter); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (t HTTPProviderCtx) RunListener(listener net.Listener) error {
+func (t *HTTPProviderCtx) Run(baseUrl string) error {
+	if err := t.preRun(); err != nil {
+		return err
+	}
+
+	return t.Engine.Run(baseUrl)
+}
+
+func (t *HTTPProviderCtx) RunListener(listener net.Listener) error {
 	return t.Engine.RunListener(listener)
 }
 
 func HTTP() *HTTPProviderCtx {
 	h := &HTTPProviderCtx{
 		Engine: gin.New(),
+		rootRouter: &Router{
+			basePath:             "/",
+			mapGlobalMiddlewares: globalMiddlewares{},
+		},
 	}
 
 	return h
