@@ -5,6 +5,7 @@ var _ ResponseError = new(responseError)
 type ResponseError interface {
 	Response
 	CopyError() ResponseError
+	SetMessage(msg string) ResponseError
 	Error() string
 }
 
