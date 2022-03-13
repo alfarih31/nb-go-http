@@ -43,7 +43,8 @@ func HTTP() *HTTPProviderCtx {
 		Engine: gin.New(),
 		rootRouter: &Router{
 			basePath:             "/",
-			mapGlobalMiddlewares: globalMiddlewares{},
+			mapParentMiddlewares: wareCheckers{},
+			mapParentPostwares:   wareCheckers{},
 		},
 	}
 

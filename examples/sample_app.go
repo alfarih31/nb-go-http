@@ -61,7 +61,7 @@ func (b ResponseBody) String() string {
 }
 
 func main() {
-	env, _ := _env.LoadEnv(".env")
+	env, _ := _env.LoadEnv(".env", true)
 
 	rl := logger.New("RootLogger")
 
