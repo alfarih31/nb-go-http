@@ -1,5 +1,6 @@
 # Noob
 
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=alfarih31_nb-go-http&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=alfarih31_nb-go-http)
 [![Go Reference](https://pkg.go.dev/badge/github.com/alfarih31/nb-go-http.svg)](https://pkg.go.dev/github.com/alfarih31/nb-go-http)
 ![GitHub go.mod Go version (subdirectory of monorepo)](https://img.shields.io/github/go-mod/go-version/alfarih31/nb-go-http?style=flat-square)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/alfarih31/nb-go-http?style=flat-square)
