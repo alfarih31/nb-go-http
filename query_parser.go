@@ -45,43 +45,37 @@ func getOptions(key string, opt []QueryParserOption) (interface{}, error) {
 	return nil, nil
 }
 
+func getKeyErr(key string, err error) error {
+	return fmt.Errorf("qs: %s error, %v", key, err)
+}
+
 func (p QueryParser) GetQueries(target interface{}, qs []Query) error {
 	kv := keyvalue.KeyValue{}
 	for _, q := range qs {
+		var (
+			v   interface{}
+			err error
+		)
 		switch q.Type {
 		case QueryValueTypeString:
-			v, err := p.GetString(q.Key, QueryParserOption{Default: q.Default, Required: q.Required})
-			if err != nil {
-				return err
-			}
-			kv[q.Key] = v
+			v, err = p.GetString(q.Key, QueryParserOption{Default: q.Default, Required: q.Required})
 		case QueryValueTypeBool:
-			v, err := p.GetBool(q.Key, QueryParserOption{Default: q.Default, Required: q.Required})
-			if err != nil {
-				return err
-			}
-			kv[q.Key] = v
+			v, err = p.GetBool(q.Key, QueryParserOption{Default: q.Default, Required: q.Required})
 		case QueryValueTypeInt:
-			v, err := p.GetInt(q.Key, QueryParserOption{Default: q.Default, Required: q.Required})
-			if err != nil {
-				return err
-			}
-			kv[q.Key] = v
+			v, err = p.GetInt(q.Key, QueryParserOption{Default: q.Default, Required: q.Required})
 		case QueryValueTypeInt32:
-			v, err := p.GetInt32(q.Key, QueryParserOption{Default: q.Default, Required: q.Required})
-			if err != nil {
-				return err
-			}
-			kv[q.Key] = v
+			v, err = p.GetInt32(q.Key, QueryParserOption{Default: q.Default, Required: q.Required})
 		case QueryValueTypeInt64:
-			v, err := p.GetInt64(q.Key, QueryParserOption{Default: q.Default, Required: q.Required})
-			if err != nil {
-				return err
-			}
-			kv[q.Key] = v
+			v, err = p.GetInt64(q.Key, QueryParserOption{Default: q.Default, Required: q.Required})
 		default:
 			Log.Warn(fmt.Sprintf("Unknown QueryValueType, Key=%s, Type=%d", q.Key, q.Type))
 		}
+
+		if err != nil {
+			return err
+		}
+
+		kv[q.Key] = v
 	}
 
 	return kv.Unmarshal(target)
@@ -130,7 +124,7 @@ func (p QueryParser) GetInt(key string, opt ...QueryParserOption) (*int, error) 
 
 	if err != nil {
 		if optErr != nil {
-			return nil, fmt.Errorf("qs: %s error, %v", key, err)
+			return nil, getKeyErr(key, err)
 		}
 
 		if optVal != nil {
@@ -139,7 +133,7 @@ func (p QueryParser) GetInt(key string, opt ...QueryParserOption) (*int, error) 
 			return &v, nil
 		}
 
-		return nil, fmt.Errorf("qs: %s error, %v", key, err)
+		return nil, getKeyErr(key, err)
 	}
 
 	return &i, err
@@ -169,7 +163,7 @@ func (p QueryParser) GetInt32(key string, opt ...QueryParserOption) (*int32, err
 
 	if err != nil {
 		if optErr != nil {
-			return nil, fmt.Errorf("qs: %s error, %v", key, err)
+			return nil, getKeyErr(key, err)
 		}
 
 		if optVal != nil {
@@ -178,7 +172,7 @@ func (p QueryParser) GetInt32(key string, opt ...QueryParserOption) (*int32, err
 			return &v, nil
 		}
 
-		return nil, fmt.Errorf("qs: %s error, %v", key, err)
+		return nil, getKeyErr(key, err)
 	}
 
 	return &i32, err
@@ -208,7 +202,7 @@ func (p QueryParser) GetInt64(key string, opt ...QueryParserOption) (*int64, err
 
 	if err != nil {
 		if optErr != nil {
-			return nil, fmt.Errorf("qs: %s error, %v", key, err)
+			return nil, getKeyErr(key, err)
 		}
 
 		if optVal != nil {
@@ -217,7 +211,7 @@ func (p QueryParser) GetInt64(key string, opt ...QueryParserOption) (*int64, err
 			return &v, nil
 		}
 
-		return nil, fmt.Errorf("qs: %s error, %v", key, err)
+		return nil, getKeyErr(key, err)
 	}
 
 	return &i64, err
@@ -246,7 +240,7 @@ func (p QueryParser) GetBool(key string, opt ...QueryParserOption) (*bool, error
 
 	if err != nil {
 		if optErr != nil {
-			return nil, fmt.Errorf("qs: %s error, %v", key, err)
+			return nil, getKeyErr(key, err)
 		}
 
 		if optVal != nil {
@@ -255,7 +249,7 @@ func (p QueryParser) GetBool(key string, opt ...QueryParserOption) (*bool, error
 			return &v, nil
 		}
 
-		return nil, fmt.Errorf("qs: %s error, %v", key, err)
+		return nil, getKeyErr(key, err)
 	}
 
 	return &b, err
