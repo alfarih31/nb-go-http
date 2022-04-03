@@ -19,6 +19,9 @@ type Ctx struct {
 
 // Start will run the Core & start serving the application
 func (co *Ctx) Start() error {
+	// Restart logger to re-read env
+	restartLogger()
+
 	var (
 		e error
 	)
