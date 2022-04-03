@@ -28,7 +28,7 @@ func (co *Ctx) Start() error {
 	crs := new(cors)
 
 	// Prepare handlers for no route
-	middlewares := []HandlerFunc{handleRequestLogger(Log), crs.HandleCORS, HandleThrottling(), HandleTimeout}
+	middlewares := []HandlerFunc{handleRequestLogger(log), crs.HandleCORS, HandleThrottling(), HandleTimeout}
 
 	co.USE(middlewares...)
 	// Handle root
@@ -46,7 +46,7 @@ func (co *Ctx) Start() error {
 	// use listener if listener not nil
 	if co.Listener != nil && cfg.UseListener {
 		url := fmt.Sprintf("%s%s", co.Listener.Addr().String(), cfg.Path)
-		Log.Info(fmt.Sprintf("TimeToBoot = %s Running: Address = '%s'", time.Since(co.startTime).String(), url), map[string]interface{}{
+		log.Info(fmt.Sprintf("TimeToBoot = %s Running: Address = '%s'", time.Since(co.startTime).String(), url), map[string]interface{}{
 			"address": url,
 		})
 
@@ -54,7 +54,7 @@ func (co *Ctx) Start() error {
 	} else {
 		baseUrlInfo := fmt.Sprintf("%s:%d", hostInfo, cfg.Port)
 		url := fmt.Sprintf("%s%s", baseUrlInfo, cfg.Path)
-		Log.Info(fmt.Sprintf("TimeToBoot = %s Running: Url = '%s'", time.Since(co.startTime).String(), url), map[string]interface{}{
+		log.Info(fmt.Sprintf("TimeToBoot = %s Running: Url = '%s'", time.Since(co.startTime).String(), url), map[string]interface{}{
 			"url": url,
 		})
 

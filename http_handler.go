@@ -101,7 +101,7 @@ func (hc HandlerChain) compact(postHandlers ...HandlerChain) gin.HandlerFunc {
 			},
 			Catch: func(err interface{}, frames *runtime.Frames) {
 				// Send Error
-				Log.Warn("error caught! don't panic, use return error instead", map[string]interface{}{"_error": err})
+				logR.Warn("error caught! don't panic, use return error instead", map[string]interface{}{"_error": err})
 
 				c.SendError(err, frames)
 			},

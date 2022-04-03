@@ -68,7 +68,7 @@ func (p QueryParser) GetQueries(target interface{}, qs []Query) error {
 		case QueryValueTypeInt64:
 			v, err = p.GetInt64(q.Key, QueryParserOption{Default: q.Default, Required: q.Required})
 		default:
-			Log.Warn(fmt.Sprintf("Unknown QueryValueType, Key=%s, Type=%d", q.Key, q.Type))
+			log.Warn(fmt.Sprintf("Unknown QueryValueType, Key=%s, Type=%d", q.Key, q.Type))
 		}
 
 		if err != nil {
