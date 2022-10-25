@@ -34,7 +34,7 @@ func (e *responseError) SetMessage(msg string) ResponseError {
 
 	ec.ComposeBody(ResponseBody{
 		Message: msg,
-	})
+	}, true)
 
 	return ec
 }
