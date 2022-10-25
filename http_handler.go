@@ -203,7 +203,7 @@ func (c *HandlerCtx) Copy() *HandlerCtx {
 
 func (c *HandlerCtx) Send(res Response) {
 	// Default send success
-	r := DefaultSuccessResponse
+	r := DefaultSuccessResponse.Copy()
 
 	// Compose success response to res
 	res.Compose(r)
@@ -216,7 +216,7 @@ func (c *HandlerCtx) Send(res Response) {
 }
 
 func (c *HandlerCtx) SendError(e interface{}, frames *runtime.Frames) {
-	r := DefaultInternalServerErrorResponse
+	r := DefaultInternalServerErrorResponse.CopyError()
 
 	// Build Error
 	parsedErr := &CoreError{
