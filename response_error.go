@@ -6,6 +6,7 @@ type ResponseError interface {
 	Response
 	CopyError() ResponseError
 	SetMessage(msg string) ResponseError
+	SetError(err error) ResponseError
 	Error() string
 }
 
@@ -34,6 +35,20 @@ func (e *responseError) SetMessage(msg string) ResponseError {
 
 	ec.ComposeBody(ResponseBody{
 		Message: msg,
+	}, true)
+
+	return ec
+}
+
+func (e *responseError) SetError(err error) ResponseError {
+	if err == nil {
+		return e
+	}
+
+	ec := e.CopyError()
+
+	ec.ComposeBody(ResponseBody{
+		Errors: err,
 	}, true)
 
 	return ec
