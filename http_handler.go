@@ -118,7 +118,26 @@ type HandlerCtx struct {
 
 type HandlerFunc func(context *HandlerCtx) (Response, error)
 
-func (c *HandlerCtx) response(status HTTPStatusCode, body interface{}, headers map[string]string) error {
+func (c *HandlerCtx) setHeader(headers map[string][]string) {
+	if headers != nil {
+		for key, h := range headers {
+			if len(h) == 0 {
+				continue
+			}
+
+			if len(h) == 1 {
+				c.Writer.Header().Set(key, h[0])
+				continue
+			}
+
+			for _, vh := range h {
+				c.Writer.Header().Add(key, vh)
+			}
+		}
+	}
+}
+
+func (c *HandlerCtx) response(status HTTPStatusCode, body interface{}, headers map[string][]string) error {
 	// return if already closed
 	if c.nextAborted {
 		return nil
@@ -128,15 +147,11 @@ func (c *HandlerCtx) response(status HTTPStatusCode, body interface{}, headers m
 		return errResponseAlreadyAborted
 	}
 
-	for key, val := range DefaultResponseHeader {
-		c.Writer.Header().Set(key, val)
-	}
+	// Set default headers
+	c.setHeader(DefaultResponseHeader)
 
-	if headers != nil {
-		for key, head := range headers {
-			c.Writer.Header().Set(key, head)
-		}
-	}
+	// Set additional headers
+	c.setHeader(headers)
 
 	// Bound status
 	if status < 100 || status > 599 {

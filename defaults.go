@@ -14,8 +14,8 @@ var DefaultMeta = keyvalue.KeyValue{
 	"app_version":     "v0.1.0",
 }
 
-var DefaultResponseHeader = map[string]string{
-	"Content-Type": "application/json",
+var DefaultResponseHeader = map[string][]string{
+	"Content-Type": {"application/json"},
 }
 
 var StartTime = utils.NewDatetimeNow().GetTime()

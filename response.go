@@ -17,7 +17,7 @@ type Response interface {
 	Copy() Response
 }
 
-type ResponseHeader map[string]string
+type ResponseHeader map[string][]string
 
 func (r ResponseHeader) Copy() *ResponseHeader {
 	nh := ResponseHeader{}
