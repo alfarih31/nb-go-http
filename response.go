@@ -55,10 +55,6 @@ func (r *response) GetBody() *ResponseBody {
 }
 
 func (r *response) GetHeader() *ResponseHeader {
-	if r.Header == nil {
-		return nil
-	}
-
 	return r.Header
 }
 
@@ -69,9 +65,15 @@ func (r *response) GetCode() *HTTPStatusCode {
 func (r *response) Compose(sourceRes Response, replaceExist ...bool) Response {
 	rExist := parser.GetOptBoolArg(replaceExist)
 
-	r.ComposeBody(*sourceRes.GetBody(), rExist)
+	b := sourceRes.GetBody()
+	if b != nil {
+		r.ComposeBody(*b, rExist)
+	}
 
-	r.ComposeHeader(*sourceRes.GetHeader(), rExist)
+	h := sourceRes.GetHeader()
+	if h != nil {
+		r.ComposeHeader(*h, rExist)
+	}
 
 	if rExist {
 		c := r.GetCode()
@@ -88,7 +90,12 @@ func (r *response) Compose(sourceRes Response, replaceExist ...bool) Response {
 
 func (r *response) ComposeHeader(h ResponseHeader, replaceExist ...bool) Response {
 	rExist := parser.GetOptBoolArg(replaceExist)
-	ch := *r.Header
+
+	chp := r.GetHeader()
+	if chp == nil {
+		return r
+	}
+	ch := *chp
 	for k, v := range h {
 		_, exist := ch[k]
 		if exist && rExist {
@@ -105,17 +112,33 @@ func (r *response) ComposeHeader(h ResponseHeader, replaceExist ...bool) Respons
 }
 
 func (r *response) Copy() Response {
-	return &response{
-		Code:   r.GetCode().Copy(),
-		Header: r.GetHeader().Copy(),
-		Body:   r.GetBody().Copy(),
+	c := r.GetCode()
+	h := r.GetHeader()
+	b := r.GetBody()
+
+	nr := &response{}
+	if c != nil {
+		nr.Code = c.Copy()
 	}
+
+	if h != nil {
+		nr.Header = h.Copy()
+	}
+
+	if b != nil {
+		nr.Body = b.Copy()
+	}
+
+	return nr
 }
 
 func (r *response) ComposeBody(body ResponseBody, replaceExist ...bool) Response {
 	rExist := parser.GetOptBoolArg(replaceExist)
 
 	tBody := r.GetBody()
+	if tBody == nil {
+		return r
+	}
 
 	sourceBody, err := keyvalue.FromStruct(body)
 	if err != nil {
@@ -149,6 +172,18 @@ func NewResponse(code HTTPStatusCode, body ResponseBody, header ...ResponseHeade
 	return &response{
 		Code:   &code,
 		Body:   &body,
+		Header: &h,
+	}
+}
+
+func NewResponseNoBody(code HTTPStatusCode, header ...ResponseHeader) Response {
+	h := ResponseHeader{}
+	if len(header) > 0 {
+		h = header[0]
+	}
+
+	return &response{
+		Code:   &code,
 		Header: &h,
 	}
 }

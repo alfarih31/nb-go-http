@@ -118,9 +118,9 @@ type HandlerCtx struct {
 
 type HandlerFunc func(context *HandlerCtx) (Response, error)
 
-func (c *HandlerCtx) setHeader(headers map[string][]string) {
+func (c *HandlerCtx) setHeader(headers *ResponseHeader) {
 	if headers != nil {
-		for key, h := range headers {
+		for key, h := range *headers {
 			if len(h) == 0 {
 				continue
 			}
@@ -137,7 +137,39 @@ func (c *HandlerCtx) setHeader(headers map[string][]string) {
 	}
 }
 
-func (c *HandlerCtx) response(status HTTPStatusCode, body interface{}, headers map[string][]string) error {
+func (c *HandlerCtx) setBody(body interface{}) error {
+	if body == nil {
+		return nil
+	}
+
+	j, e := json.Marshal(body)
+
+	if e != nil {
+		return e
+	}
+
+	_, e = c.Writer.WriteString(string(j))
+	if e != nil {
+		return e
+	}
+	return nil
+}
+
+func (c *HandlerCtx) setStatus(status *HTTPStatusCode) {
+	// Bound status
+	if status != nil {
+		if *status < 100 || *status > 599 {
+			sIerr := StatusInternalServerError
+			status = &sIerr
+		}
+
+		c.Writer.WriteHeader(int(*status))
+	} else {
+		c.Writer.WriteHeader(int(StatusInternalServerError))
+	}
+}
+
+func (c *HandlerCtx) response(status *HTTPStatusCode, body interface{}, headers *ResponseHeader) error {
 	// return if already closed
 	if c.nextAborted {
 		return nil
@@ -148,25 +180,16 @@ func (c *HandlerCtx) response(status HTTPStatusCode, body interface{}, headers m
 	}
 
 	// Set default headers
-	c.setHeader(DefaultResponseHeader)
+	c.setHeader(&DefaultResponseHeader)
 
 	// Set additional headers
 	c.setHeader(headers)
 
-	// Bound status
-	if status < 100 || status > 599 {
-		status = 500
-	}
+	// Set status
+	c.setStatus(status)
 
-	c.Writer.WriteHeader(int(status))
-
-	j, e := json.Marshal(body)
-
-	if e != nil {
-		return e
-	}
-
-	_, e = c.Writer.WriteString(string(j))
+	// Set Body
+	e := c.setBody(body)
 
 	// Prevent write to response
 	c.Abort()
@@ -223,7 +246,7 @@ func (c *HandlerCtx) Send(res Response) {
 	// Compose success response to res
 	res.Compose(r)
 
-	rEr := c.response(*res.GetCode(), *res.GetBody(), *res.GetHeader())
+	rEr := c.response(res.GetCode(), res.GetBody(), res.GetHeader())
 
 	if rEr != nil {
 		logR.Error("send response error", map[string]interface{}{"_error": rEr})
@@ -269,7 +292,7 @@ func (c *HandlerCtx) SendError(e interface{}, frames *runtime.Frames) {
 	// Stack Error to Context
 	c.StackError(parsedErr)
 
-	rEr := c.response(*r.GetCode(), *r.GetBody(), *r.GetHeader())
+	rEr := c.response(r.GetCode(), r.GetBody(), r.GetHeader())
 
 	if rEr != nil {
 		logR.Error("send response error", map[string]interface{}{"_error": rEr})

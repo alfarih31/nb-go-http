@@ -85,7 +85,7 @@ func HandleTimeout(c *HandlerCtx) (Response, error) {
 			return nil, err
 		case <-timeoutCtx.Done():
 			r := DefaultRequestTimeoutErrorResponse
-			if err := c.response(*r.GetCode(), *r.GetBody(), *r.GetHeader()); err != nil {
+			if err := c.response(r.GetCode(), r.GetBody(), r.GetHeader()); err != nil {
 				log.Error(err)
 			}
 		}

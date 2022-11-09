@@ -14,7 +14,7 @@ var DefaultMeta = keyvalue.KeyValue{
 	"app_version":     "v0.1.0",
 }
 
-var DefaultResponseHeader = map[string][]string{
+var DefaultResponseHeader = ResponseHeader{
 	"Content-Type": {"application/json"},
 }
 
@@ -85,10 +85,7 @@ var DefaultSuccessResponse = NewResponse(StatusOK, ResponseBody{
 	Message: "success",
 })
 
-var DefaultSuccessNoContentResponse = NewResponse(StatusNoContent, ResponseBody{
-	Code:    statusCodeOk,
-	Message: "success",
-})
+var DefaultSuccessNoContentResponse = NewResponseNoBody(StatusNoContent)
 
 var DefaultInternalServerErrorResponse = NewResponseError(StatusInternalServerError, ResponseBody{
 	Code:    statusCodeErrInternal,
