@@ -137,7 +137,7 @@ func (c *HandlerCtx) setHeader(headers *ResponseHeader) {
 	}
 }
 
-func (c *HandlerCtx) setBody(body interface{}) error {
+func (c *HandlerCtx) setBody(body *ResponseBody) error {
 	if body == nil {
 		return nil
 	}
@@ -169,7 +169,7 @@ func (c *HandlerCtx) setStatus(status *HTTPStatusCode) {
 	}
 }
 
-func (c *HandlerCtx) response(status *HTTPStatusCode, body interface{}, headers *ResponseHeader) error {
+func (c *HandlerCtx) response(status *HTTPStatusCode, body *ResponseBody, headers *ResponseHeader) error {
 	// return if already closed
 	if c.nextAborted {
 		return nil
