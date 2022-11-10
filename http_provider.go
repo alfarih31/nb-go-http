@@ -47,6 +47,7 @@ func HTTP() *HTTPProviderCtx {
 			mapParentPostwares:   wareCheckers{},
 		},
 	}
+	h.Engine.RedirectTrailingSlash = true
 
 	return h
 }
